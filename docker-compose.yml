@@ -1,0 +1,79 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: clairios
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-clairios_dev}
+      POSTGRES_DB: clairios
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clairios"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # OpenFGA migration - runs once to set up tables
+  openfga-migrate:
+    image: openfga/openfga:latest
+    command: migrate
+    environment:
+      OPENFGA_DATASTORE_ENGINE: postgres
+      OPENFGA_DATASTORE_URI: postgres://clairios:${DB_PASSWORD:-clairios_dev}@db:5432/clairios?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # OpenFGA authorization service
+  openfga:
+    image: openfga/openfga:latest
+    restart: unless-stopped
+    command: run
+    environment:
+      OPENFGA_DATASTORE_ENGINE: postgres
+      OPENFGA_DATASTORE_URI: postgres://clairios:${DB_PASSWORD:-clairios_dev}@db:5432/clairios?sslmode=disable
+      OPENFGA_LOG_FORMAT: json
+    ports:
+      - "8080:8080"   # HTTP API
+      - "8081:8081"   # gRPC API
+      - "3002:3000"   # Playground (mapped to 3002 to avoid conflict with app)
+    depends_on:
+      openfga-migrate:
+        condition: service_completed_successfully
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://clairios:${DB_PASSWORD:-clairios_dev}@db:5432/clairios
+      PORT: 3001
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-dev_secret_change_in_production}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3001}
+      OPENFGA_API_URL: http://openfga:8080
+    depends_on:
+      db:
+        condition: service_healthy
+      openfga:
+        condition: service_started
+    ports:
+      - "3001:3001"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: ${API_URL:-http://localhost:3001}
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

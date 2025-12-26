@@ -1,0 +1,32 @@
+{
+  "name": "clairios",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "api",
+    "app"
+  ],
+  "scripts": {
+    "dev": "pnpm run --filter '*' dev",
+    "dev:api": "pnpm run --filter api dev",
+    "dev:app": "pnpm run --filter app dev",
+    "dev:infra": "docker-compose -f docker-compose.infra.yml up -d",
+    "dev:infra:down": "docker-compose -f docker-compose.infra.yml down",
+    "dev:docker": "docker-compose -f docker-compose.dev.yml up",
+    "build": "pnpm run --filter '*' build",
+    "build:api": "pnpm run --filter api build",
+    "build:app": "pnpm run --filter app build",
+    "lint": "pnpm run --filter '*' lint",
+    "test": "pnpm run --filter '*' test",
+    "db:generate": "pnpm run --filter api db:generate",
+    "db:migrate": "pnpm run --filter api db:migrate",
+    "db:studio": "pnpm run --filter api db:studio"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
+  },
+  "volta": {
+    "node": "22.21.1"
+  }
+}

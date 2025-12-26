@@ -1,0 +1,32 @@
+{
+  "name": "api",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@clairios/shared": "workspace:*",
+    "@hono/node-server": "^1.13.8",
+    "@hono/zod-validator": "^0.7.6",
+    "@openfga/sdk": "^0.8.0",
+    "better-auth": "^1.4.9",
+    "drizzle-orm": "^0.45.1",
+    "hono": "^4.11.2",
+    "nanoid": "^5.1.6",
+    "postgres": "^3.4.5",
+    "sidequest": "^1.0.6",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "drizzle-kit": "^0.31.8",
+    "tsx": "^4.19.2",
+    "typescript": "~5.9.3"
+  }
+}
