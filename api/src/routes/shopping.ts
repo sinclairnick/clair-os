@@ -68,10 +68,10 @@ shoppingRouter.get('/lists/:id', async (c) => {
 const addItemSchema = z.object({
   name: z.string().min(1).max(200),
   quantity: z.number().int().min(1).default(1),
-  unit: z.string().optional(),
-  category: z.string().optional(),
-  sourceRecipeId: z.string().uuid().optional(),
-  notes: z.string().optional(),
+  unit: z.string().optional().nullable(),
+  category: z.string().optional().nullable(),
+  sourceRecipeId: z.string().uuid().optional().nullable(),
+  notes: z.string().optional().nullable(),
 });
 
 shoppingRouter.post('/lists/:id/items', zValidator('json', addItemSchema), async (c) => {

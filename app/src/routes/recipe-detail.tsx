@@ -15,6 +15,8 @@ import { ArrowLeft, Loader2, Clock, Users, Edit, ShoppingCart, Play, Pause, Rota
 import { useCurrentFamilyId } from "@/components/auth-provider";
 import { api, type RecipeResponse } from "@/lib/api";
 import { queryKeys, shoppingListsQuery } from "@/lib/queries";
+import { useAppStore } from "@/lib/store";
+import { toast } from "sonner";
 
 interface ActiveTimer {
 	id: string;
@@ -34,6 +36,8 @@ export function RecipeDetailPage() {
 	const [checkedSteps, setCheckedSteps] = useState<Set<string>>(new Set());
 	const [activeTimers, setActiveTimers] = useState<ActiveTimer[]>([]);
 	const [addToListDialogOpen, setAddToListDialogOpen] = useState(false);
+
+	const { lastShoppingListId, setLastShoppingListId } = useAppStore();
 	const [selectedListId, setSelectedListId] = useState<string>("");
 	const [ingredientsToAdd, setIngredientsToAdd] = useState<Set<number>>(new Set());
 	const [timerDialogOpen, setTimerDialogOpen] = useState(false);
@@ -51,13 +55,23 @@ export function RecipeDetailPage() {
 		}
 	}, [recipe]);
 
-	const { data: shoppingLists } = useQuery(
+	const { data: activeShoppingLists = [] } = useQuery(
 		shoppingListsQuery(familyId || "", {
 			enabled: !!familyId && addToListDialogOpen,
+			select: (lists) => lists.filter(list => list.status === 'active'),
 		})
 	);
 
-	const activeShoppingLists = shoppingLists?.filter(list => list.status === 'active') || [];
+	useEffect(() => {
+		if (activeShoppingLists?.length == 0) return
+
+		if (lastShoppingListId != null && activeShoppingLists?.some(list => list.id == lastShoppingListId)) {
+			setSelectedListId(lastShoppingListId)
+			return
+		}
+
+		setSelectedListId(activeShoppingLists ? activeShoppingLists[0].id : "")
+	}, [activeShoppingLists, lastShoppingListId, setSelectedListId])
 
 	const addItemsMutation = useMutation({
 		mutationFn: async () => {
@@ -77,6 +91,7 @@ export function RecipeDetailPage() {
 
 			await Promise.all(promises);
 		},
+
 		onSuccess: () => {
 			setAddToListDialogOpen(false);
 			queryClient.invalidateQueries({ queryKey: queryKeys.shopping.lists(familyId || "") });
@@ -84,6 +99,7 @@ export function RecipeDetailPage() {
 			if (recipe?.ingredients) {
 				setIngredientsToAdd(new Set(recipe.ingredients.map((_, i) => i)));
 			}
+			toast.success("Items added to shopping list");
 		},
 	});
 
@@ -447,7 +463,11 @@ export function RecipeDetailPage() {
 							<select
 								className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
 								value={selectedListId}
-								onChange={(e) => setSelectedListId(e.target.value)}
+								onChange={(e) => {
+									const id = e.target.value;
+									setSelectedListId(id);
+									setLastShoppingListId(id);
+								}}
 							>
 								<option value="" disabled>Select a shopping list</option>
 								{activeShoppingLists.map(list => (

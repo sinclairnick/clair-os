@@ -31,6 +31,8 @@ import {
 	updateShoppingItemNameMutation,
 } from "@/lib/queries";
 import { api } from "@/lib/api";
+import { RecipeHoverPreview } from "@/components/recipe-hover-preview";
+import { toast } from "sonner";
 
 export function ShoppingPage() {
 	const familyId = useCurrentFamilyId();
@@ -63,6 +65,7 @@ export function ShoppingPage() {
 		}),
 	});
 
+
 	const createListMutation = useMutation({
 		...createShoppingListMutation({
 			onSuccess: () => {
@@ -73,7 +76,9 @@ export function ShoppingPage() {
 				}
 				setIsCreateDialogOpen(false);
 				setNewListName("");
+				toast.success("Shopping list created");
 			},
+			onError: () => toast.error("Failed to create shopping list"),
 		}),
 	});
 
@@ -86,7 +91,9 @@ export function ShoppingPage() {
 					queryKey: queryKeys.shopping.lists(familyId),
 				});
 			}
+			toast.success("Item added to list");
 		},
+		onError: () => toast.error("Failed to add item"),
 	});
 
 	const deleteListMutation = useMutation({
@@ -97,7 +104,9 @@ export function ShoppingPage() {
 						queryKey: queryKeys.shopping.lists(familyId),
 					});
 				}
+				toast.success("Shopping list deleted");
 			},
+			onError: () => toast.error("Failed to delete shopping list"),
 		}),
 	});
 
@@ -412,6 +421,12 @@ export function ShoppingPage() {
 														{item.name}
 														{item.unit && ` (${item.unit})`}
 													</span>
+												)}
+
+												{item.sourceRecipeId && (
+													<div className="mx-1">
+														<RecipeHoverPreview recipeId={item.sourceRecipeId} />
+													</div>
 												)}
 
 												<Button

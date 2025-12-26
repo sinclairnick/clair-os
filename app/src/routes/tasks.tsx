@@ -27,6 +27,7 @@ import { tasksQuery, queryKeys, updateTaskMutation, createTaskMutation } from "@
 import { api } from "@/lib/api";
 import { format, isPast, isToday } from "date-fns";
 import { TaskBoard } from "@/components/task-board";
+import { useAppStore } from "@/lib/store";
 
 const priorityColors = {
 	low: "bg-secondary text-secondary-foreground",
@@ -40,7 +41,11 @@ type TaskStatus = "todo" | "in_progress" | "done" | "canceled" | "pending";
 export function TasksPage() {
 	const familyId = useCurrentFamilyId();
 	const queryClient = useQueryClient();
-	const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
+
+	const { taskViewMode, setTaskViewMode } = useAppStore();
+	const viewMode = taskViewMode;
+	const setViewMode = setTaskViewMode;
+
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
 	// Form state

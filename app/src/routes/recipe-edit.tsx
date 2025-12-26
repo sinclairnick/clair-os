@@ -14,6 +14,8 @@ import { ArrowLeft, Loader2, Plus, X, Clock, Users, Save, Trash2 } from "lucide-
 import { useCurrentFamilyId } from "@/components/auth-provider";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/queries";
+// ... imports ...
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 // Common units for ingredient measurement - used as datalist suggestions
@@ -54,21 +56,23 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 	const editorRef = useRef<RecipeEditorRef>(null);
 	const [editorKey, setEditorKey] = useState(0);
 
-	const form = useForm<RecipeFormData>({
+	const form = useForm({
 		resolver: zodResolver(recipeFormSchema),
 		mode: "onChange",
 		defaultValues: {
 			title: "",
 			description: "",
 			servings: 4,
-			prepTimeMinutes: undefined,
-			cookTimeMinutes: undefined,
+			prepTimeMinutes: 0,
+			cookTimeMinutes: 0,
 			instructions: "",
 			tags: [],
 			imageUrl: "",
 			ingredients: [],
 		},
 	});
+
+
 
 	const { fields: ingredientFields, append: appendIngredient, remove: removeIngredient } = useFieldArray({
 		control: form.control,
@@ -95,8 +99,8 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 				title: recipe.title,
 				description: recipe.description || "",
 				servings: recipe.servings,
-				prepTimeMinutes: recipe.prepTimeMinutes,
-				cookTimeMinutes: recipe.cookTimeMinutes,
+				prepTimeMinutes: recipe.prepTimeMinutes ?? 0,
+				cookTimeMinutes: recipe.cookTimeMinutes ?? 0,
 				instructions: recipe.instructions,
 				tags: recipe.tags as string[],
 				imageUrl: recipe.imageUrl || "",
@@ -111,6 +115,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 			setEditorKey((k) => k + 1);
 		}
 	}, [recipe, form]);
+
 
 	const saveMutation = useMutation({
 		mutationFn: async (data: RecipeFormData) => {
@@ -143,8 +148,12 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 			if (familyId) {
 				queryClient.invalidateQueries({ queryKey: queryKeys.recipes.all(familyId) });
 			}
+			toast.success(isNew ? "Recipe created successfully" : "Recipe updated successfully");
 			navigate("/recipes");
 		},
+		onError: () => {
+			toast.error(isNew ? "Failed to create recipe" : "Failed to update recipe");
+		}
 	});
 
 	const deleteMutation = useMutation({
@@ -153,8 +162,12 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 			if (familyId) {
 				queryClient.invalidateQueries({ queryKey: queryKeys.recipes.all(familyId) });
 			}
+			toast.success("Recipe deleted");
 			navigate("/recipes");
 		},
+		onError: () => {
+			toast.error("Failed to delete recipe");
+		}
 	});
 
 	const handleAddTag = (tag: string) => {
@@ -406,13 +419,14 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 									<Controller
 										control={form.control}
 										name="prepTimeMinutes"
+										defaultValue={0}
 										render={({ field }) => (
 											<Input
 												type="number"
 												min={0}
 												placeholder="0"
-												value={field.value || ""}
-												onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+												value={field.value}
+												onChange={(e) => field.onChange(parseInt(e.target.value))}
 											/>
 										)}
 									/>
@@ -425,13 +439,14 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 									<Controller
 										control={form.control}
 										name="cookTimeMinutes"
+										defaultValue={0}
 										render={({ field }) => (
 											<Input
 												type="number"
 												min={0}
 												placeholder="0"
-												value={field.value || ""}
-												onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+												value={field.value}
+												onChange={(e) => field.onChange(parseInt(e.target.value))}
 											/>
 										)}
 									/>

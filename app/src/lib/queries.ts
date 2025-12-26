@@ -289,7 +289,6 @@ type UpdateShoppingItemNameMutationOptions = Omit<
 >;
 
 export function updateShoppingItemNameMutation(options?: UpdateShoppingItemNameMutationOptions) {
-  const { recipeId } = useParams<{ recipeId: string }>();
   return {
     mutationFn: ({ id, name }: { id: string; name: string }) => api.shopping.items.updateName(id, name),
     ...options,
