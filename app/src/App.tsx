@@ -12,7 +12,9 @@ import { SettingsPage } from "@/routes/settings";
 import { LoginPage } from "@/routes/login";
 import { FamilySelectPage } from "@/routes/family-select";
 import { FamilyManagePage } from "@/routes/family-manage";
+import { UserProfilePage } from "@/routes/user-profile";
 import { ThemeProvider } from "./components/theme-provider";
+import { ROUTES, ROUTE_PATTERNS } from "@/lib/routes";
 
 import { Toaster } from "@/components/ui/sonner";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -23,20 +25,21 @@ export function App() {
 	return (
 		<ThemeProvider>
 			<Routes>
-				<Route path="/login" element={<LoginPage />} />
+				<Route path={ROUTES.LOGIN} element={<LoginPage />} />
 				<Route element={<ProtectedRoute />}>
-					<Route path="/family" element={<FamilySelectPage />} />
+					<Route path={ROUTES.FAMILY_SELECT} element={<FamilySelectPage />} />
 					<Route element={<AppLayout />}>
 						<Route index element={<HomePage />} />
-						<Route path="recipes" element={<RecipesPage />} />
-						<Route path="recipes/new" element={<RecipeEditPage isNew />} />
-						<Route path="recipes/:recipeId" element={<RecipeDetailPage />} />
-						<Route path="recipes/:recipeId/edit" element={<RecipeEditPage />} />
-						<Route path="shopping" element={<ShoppingPage />} />
-						<Route path="tasks" element={<TasksPage />} />
-						<Route path="calendar" element={<CalendarPage />} />
-						<Route path="settings" element={<SettingsPage />} />
-						<Route path="settings/family" element={<FamilyManagePage />} />
+						<Route path={ROUTES.RECIPES} element={<RecipesPage />} />
+						<Route path={ROUTES.RECIPE_NEW} element={<RecipeEditPage isNew />} />
+						<Route path={ROUTE_PATTERNS.RECIPE_DETAIL} element={<RecipeDetailPage />} />
+						<Route path={ROUTE_PATTERNS.RECIPE_EDIT} element={<RecipeEditPage />} />
+						<Route path={ROUTES.SHOPPING} element={<ShoppingPage />} />
+						<Route path={ROUTES.TASKS} element={<TasksPage />} />
+						<Route path={ROUTES.CALENDAR} element={<CalendarPage />} />
+						<Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
+						<Route path={ROUTES.FAMILY_MANAGE} element={<FamilyManagePage />} />
+						<Route path={ROUTE_PATTERNS.MEMBER_PROFILE} element={<UserProfilePage />} />
 					</Route>
 				</Route>
 			</Routes>

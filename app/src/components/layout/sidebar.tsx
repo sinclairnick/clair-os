@@ -26,13 +26,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTimerStore } from "@/lib/timer-store";
 import { LiveTimerText } from "@/components/timer/live-timer";
+import { ROUTES } from "@/lib/routes";
 
 const navItems = [
-	{ to: "/", label: "Home", icon: Home },
-	{ to: "/recipes", label: "Recipes", icon: CookingPot },
-	{ to: "/shopping", label: "Shopping", icon: ShoppingCart },
-	{ to: "/tasks", label: "Tasks", icon: CheckSquare },
-	{ to: "/calendar", label: "Calendar", icon: Calendar },
+	{ to: ROUTES.HOME, label: "Home", icon: Home },
+	{ to: ROUTES.RECIPES, label: "Recipes", icon: CookingPot },
+	{ to: ROUTES.SHOPPING, label: "Shopping", icon: ShoppingCart },
+	{ to: ROUTES.TASKS, label: "Tasks", icon: CheckSquare },
+	{ to: ROUTES.CALENDAR, label: "Calendar", icon: Calendar },
 ];
 
 export function Sidebar() {
@@ -132,7 +133,7 @@ export function Sidebar() {
 										<div className="flex items-center gap-1 min-w-0 pr-4">
 											{timer.recipeId ? (
 												<Link
-													to={`/recipes/${timer.recipeId}`}
+													to={ROUTES.RECIPE_DETAIL(timer.recipeId)}
 													className="inline-flex items-center gap-1 text-[10px] font-bold text-primary hover:underline group/link"
 													title="Go to recipe"
 												>
@@ -188,7 +189,7 @@ export function Sidebar() {
 			{/* Bottom section: Settings & User */}
 			<div className="px-3 py-4 border-t border-sidebar-border space-y-2">
 				<NavLink
-					to="/settings"
+					to={ROUTES.SETTINGS}
 					className={({ isActive }) =>
 						cn(
 							"flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",

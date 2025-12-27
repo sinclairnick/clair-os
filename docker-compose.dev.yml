@@ -52,6 +52,22 @@ services:
       openfga-migrate:
         condition: service_completed_successfully
 
+  # Database migrations for app schema (Drizzle)
+  db-migrate:
+    image: node:22-alpine
+    working_dir: /workspace/api
+    command: sh -c "corepack enable && corepack prepare pnpm@latest --activate && cd /workspace && pnpm install && cd /workspace/api && pnpm db:migrate"
+    environment:
+      DATABASE_URL: postgres://clairios:${DB_PASSWORD:-clairios_dev}@db:5432/clairios
+    volumes:
+      - .:/workspace
+      - api_node_modules:/workspace/node_modules
+      - api_pkg_node_modules:/workspace/api/node_modules
+      - shared_node_modules:/workspace/packages/shared/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+
   # API with live reloading
   api:
     image: node:22-alpine
@@ -76,6 +92,8 @@ services:
         condition: service_healthy
       openfga:
         condition: service_started
+      db-migrate:
+        condition: service_completed_successfully
 
   # Frontend with live reloading
   app:

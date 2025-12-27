@@ -2,8 +2,8 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { db } from '../db/index.js';
-import { families, familyMembers, familyInvites } from '../db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { families, familyMembers, familyInvites, tasks, recipes, calendarEvents } from '../db/schema.js';
+import { eq, and, gte } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { 
   requireAuth, 
@@ -291,4 +291,82 @@ familiesRouter.delete('/:familyId/members/:userId', requireFamilyAdmin, async (c
     .where(and(eq(familyMembers.userId, userId), eq(familyMembers.familyId, familyId)));
 
   return c.json({ success: true });
+});
+
+// ─────────────────────────────────────────────────────────────
+// Member Profile
+// ─────────────────────────────────────────────────────────────
+
+// Get a member's profile with their activity (any family member can view)
+familiesRouter.get('/:familyId/members/:userId/profile', requireFamilyMember, async (c) => {
+  const familyId = c.get('familyId');
+  const userId = c.req.param('userId');
+
+  // Get member info
+  const member = await db.query.familyMembers.findFirst({
+    where: and(eq(familyMembers.userId, userId), eq(familyMembers.familyId, familyId)),
+    with: {
+      user: true,
+    },
+  });
+
+  if (!member) {
+    return c.json({ error: 'Member not found' }, 404);
+  }
+
+  // Get tasks assigned to this user in this family
+  const userTasks = await db.query.tasks.findMany({
+    where: and(
+      eq(tasks.familyId, familyId),
+      eq(tasks.assigneeId, userId)
+    ),
+    orderBy: (tasks, { desc }) => [desc(tasks.createdAt)],
+    limit: 10,
+  });
+
+  // Get recipes created by this user in this family
+  const userRecipes = await db.query.recipes.findMany({
+    where: and(
+      eq(recipes.familyId, familyId),
+      eq(recipes.createdById, userId)
+    ),
+    orderBy: (recipes, { desc }) => [desc(recipes.createdAt)],
+    limit: 10,
+    with: {
+      ingredients: true,
+    },
+  });
+
+  // Get upcoming calendar events where this user is involved
+  const now = new Date();
+  const upcomingEvents = await db.query.calendarEvents.findMany({
+    where: and(
+      eq(calendarEvents.familyId, familyId),
+      gte(calendarEvents.startTime, now)
+    ),
+    orderBy: (events, { asc }) => [asc(events.startTime)],
+    limit: 10,
+  });
+
+  // Filter events to only those where user is in memberIds
+  const userEvents = upcomingEvents.filter(event => {
+    const memberIds = event.memberIds as string[];
+    return memberIds.includes(userId);
+  });
+
+  return c.json({
+    member: {
+      userId: member.userId,
+      displayName: member.displayName,
+      role: member.role,
+      color: member.color,
+      joinedAt: member.joinedAt,
+      email: member.user.email,
+      name: member.user.name,
+      image: member.user.image,
+    },
+    tasks: userTasks,
+    recipes: userRecipes,
+    upcomingEvents: userEvents,
+  });
 });

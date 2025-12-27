@@ -9,3 +9,4 @@ export { SettingsPage } from "./settings";
 export { LoginPage } from "./login";
 export { FamilySelectPage } from "./family-select";
 export { FamilyManagePage } from "./family-manage";
+export { UserProfilePage } from "./user-profile";

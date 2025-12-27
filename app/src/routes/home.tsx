@@ -1,35 +1,36 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CookingPot, ShoppingCart, CheckSquare, Calendar, Clock, Play, Pause, RotateCcw, ExternalLink } from "lucide-react";
+import { CookingPot, ShoppingCart, CheckSquare, Calendar, Clock, Play, Pause, RotateCcw, ExternalLink, X } from "lucide-react";
 import { Link } from "react-router";
 import { useTimerStore } from "@/lib/timer-store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { LiveTimerText, LiveTimerProgress } from "@/components/timer/live-timer";
+import { ROUTES } from "@/lib/routes";
 
 const quickLinks = [
 	{
-		to: "/recipes",
+		to: ROUTES.RECIPES,
 		label: "Recipes",
 		description: "Browse and manage your family recipes",
 		icon: CookingPot,
 		color: "text-orange-600 dark:text-orange-400",
 	},
 	{
-		to: "/shopping",
+		to: ROUTES.SHOPPING,
 		label: "Shopping",
 		description: "Create and manage shopping lists",
 		icon: ShoppingCart,
 		color: "text-green-600 dark:text-green-400",
 	},
 	{
-		to: "/tasks",
+		to: ROUTES.TASKS,
 		label: "Tasks",
 		description: "Track chores and to-dos",
 		icon: CheckSquare,
 		color: "text-blue-600 dark:text-blue-400",
 	},
 	{
-		to: "/calendar",
+		to: ROUTES.CALENDAR,
 		label: "Calendar",
 		description: "View your family schedule",
 		icon: Calendar,
@@ -38,8 +39,8 @@ const quickLinks = [
 ];
 
 export function HomePage() {
-	const { timers, startTimer, pauseTimer, resetTimer } = useTimerStore();
-	const activeTimers = Object.values(timers);
+	const { timers, startTimer, pauseTimer, resetTimer, removeTimer } = useTimerStore();
+	const activeTimers = Object.values(timers).filter(timer => timer.status !== 'idle');
 
 	return (
 		<div className="space-y-8">
@@ -64,12 +65,20 @@ export function HomePage() {
 								"relative overflow-hidden border-2",
 								timer.status === 'completed' ? "border-primary bg-primary/5 animate-pulse" : "border-muted"
 							)}>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="absolute top-1 right-1 h-7 w-7 text-muted-foreground hover:text-destructive transition-colors z-10"
+									onClick={() => removeTimer(timer.id)}
+								>
+									<X className="w-4 h-4" />
+								</Button>
 								<CardContent className="pt-6">
 									<div className="flex justify-between items-start mb-4">
 										<div className="space-y-1">
 											{timer.recipeId ? (
 												<Link
-													to={`/recipes/${timer.recipeId}`}
+													to={ROUTES.RECIPE_DETAIL(timer.recipeId)}
 													className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-bold hover:bg-primary/20 transition-colors group/link"
 												>
 													{timer.label}

@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useLocation } from "react-router";
+import { useNavigate, Navigate, Outlet, useLocation } from "react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { Sidebar } from "./sidebar";
@@ -6,6 +6,7 @@ import { MobileNav } from "./mobile-nav";
 import { checkTimerCompletions, useTimerStore } from "@/lib/timer-store";
 import { toast } from "sonner";
 import { Bell } from "lucide-react";
+import { ROUTES } from "@/lib/routes";
 
 // Alarm sound using Web Audio API
 const playAlarm = () => {
@@ -46,7 +47,7 @@ const sendNotification = (title: string, body: string, recipeId?: string) => {
 		const notification = new Notification(title, { body, icon: "/logo192.png" });
 		notification.onclick = () => {
 			window.focus();
-			if (recipeId) window.location.hash = `/recipes/${recipeId}`;
+			if (recipeId) window.location.href = ROUTES.RECIPE_DETAIL(recipeId);
 		};
 	} else if (Notification.permission !== "denied") {
 		Notification.requestPermission();
@@ -56,6 +57,7 @@ const sendNotification = (title: string, body: string, recipeId?: string) => {
 export function AppLayout() {
 	const { currentFamily, families, isLoading } = useAuth();
 	const location = useLocation();
+	const navigate = useNavigate();
 
 	// Global timer ticker
 	useEffect(() => {
@@ -86,7 +88,7 @@ export function AppLayout() {
 							duration: 10000,
 							action: timer.recipeId ? {
 								label: "View Recipe",
-								onClick: () => (window.location.hash = `#/recipes/${timer.recipeId}`)
+								onClick: () => navigate(ROUTES.RECIPE_DETAIL(timer.recipeId!))
 							} : undefined,
 							icon: <Bell className="w-4 h-4" />
 						});

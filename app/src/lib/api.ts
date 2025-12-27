@@ -159,6 +159,29 @@ export interface JoinFamilyResponse {
   role: string;
 }
 
+export interface CalendarEventResponse {
+  id: string;
+  familyId: string;
+  title: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  allDay: boolean;
+  memberIds: string[];
+  linkedEntityType?: string;
+  linkedEntityId?: string;
+  color?: string;
+  location?: string;
+  createdAt: string;
+}
+
+export interface MemberProfileResponse {
+  member: FamilyMemberResponse;
+  tasks: TaskResponse[];
+  recipes: RecipeResponse[];
+  upcomingEvents: CalendarEventResponse[];
+}
+
 // ─────────────────────────────────────────────────────────────
 // API methods
 // ─────────────────────────────────────────────────────────────
@@ -200,6 +223,9 @@ export const api = {
       apiFetch<JoinFamilyResponse>(`/families/join/${code}`, {
         method: 'POST',
       }),
+    // Member Profile
+    getMemberProfile: (familyId: string, userId: string) =>
+      apiFetch<MemberProfileResponse>(`/families/${familyId}/members/${userId}/profile`),
   },
 
   // Recipes
