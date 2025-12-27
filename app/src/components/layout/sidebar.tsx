@@ -14,6 +14,9 @@ import {
 	RotateCcw,
 	X,
 	ExternalLink,
+	BookOpen,
+	ArrowRight,
+	ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -25,6 +28,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTimerStore } from "@/lib/timer-store";
+import { useWatchedRecipesStore } from "@/lib/watched-recipes-store";
 import { LiveTimerText } from "@/components/timer/live-timer";
 import { ROUTES } from "@/lib/routes";
 
@@ -42,6 +46,10 @@ export function Sidebar() {
 
 	// Show active/paused/completed timers in the sidebar
 	const activeTimers = Object.values(timers).filter(timer => timer.status !== 'idle');
+
+	// Watched recipes from the store
+	const { recipes: watchedRecipes, removeRecipe } = useWatchedRecipesStore();
+	const watchedRecipesList = Object.values(watchedRecipes).sort((a, b) => b.addedAt - a.addedAt);
 
 	return (
 		<div className="flex flex-col h-full bg-sidebar">
@@ -180,6 +188,56 @@ export function Sidebar() {
 									</div>
 								</div>
 							))}
+						</div>
+					</div>
+				)}
+
+				{/* Watched Recipes Section */}
+				{watchedRecipesList.length > 0 && (
+					<div className="mt-6 pt-4 border-t border-sidebar-border">
+						<h3 className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2 flex items-center gap-2">
+							<BookOpen className="w-3 h-3" />
+							Watched Recipes
+						</h3>
+						<div className="space-y-1 px-1">
+							{watchedRecipesList.map((recipe) => {
+								const checkedCount = recipe.checkedIngredients.length;
+								return (
+									<div
+										key={recipe.id}
+										className="p-2 rounded-md bg-sidebar-accent/50 border border-sidebar-border group relative"
+									>
+										<div className="flex items-center justify-between">
+											<Link
+												to={ROUTES.RECIPE_DETAIL(recipe.id)}
+												className="flex items-center gap-1 text-xs font-medium text-sidebar-foreground hover:text-primary truncate pr-6"
+												title={recipe.title}
+											>
+												<span className="truncate max-w-[170px]">{recipe.title}</span>
+												<ChevronRight className="w-2.5 h-2.5 shrink-0 opacity-50" />
+											</Link>
+											<button
+												onClick={() => removeRecipe(recipe.id)}
+												className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-0.5 hover:bg-sidebar-accent rounded-full text-sidebar-foreground/50 hover:text-sidebar-foreground transition-all"
+												title="Dismiss"
+											>
+												<X className="w-3 h-3" />
+											</button>
+										</div>
+										<div className="flex items-center gap-2 mt-1 text-[10px] text-sidebar-foreground/60">
+											{checkedCount > 0 && (
+												<span>{checkedCount} checked</span>
+											)}
+											{recipe.scaleFactor !== 1 && (
+												<span className="text-primary font-medium">{recipe.scaleFactor}x</span>
+											)}
+											{recipe.explicit && (
+												<span className="bg-primary/20 text-primary px-1 rounded">pinned</span>
+											)}
+										</div>
+									</div>
+								);
+							})}
 						</div>
 					</div>
 				)}

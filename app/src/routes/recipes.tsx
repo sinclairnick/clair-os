@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
+import { useQueryState, parseAsString, parseAsInteger, parseAsArrayOf } from 'nuqs';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,8 +23,17 @@ import {
 	Upload,
 	Trash2,
 	CheckCircle2,
-	ListChecks
+	ListChecks,
+	ArrowUpDown,
+	SlidersHorizontal,
+	ChevronDown
 } from "lucide-react";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
 import { useCurrentFamilyId } from "@/components/auth-provider";
 import { recipesQuery, queryKeys } from "@/lib/queries";
 import { RecipeImportDialog } from "@/components/recipe-import-dialog";
@@ -35,18 +45,38 @@ export function RecipesPage() {
 	const navigate = useNavigate();
 	const familyId = useCurrentFamilyId();
 	const queryClient = useQueryClient();
-	const [searchQuery, setSearchQuery] = useState("");
-	const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+	// Server-side filter states using nuqs
+	const [search, setSearch] = useQueryState('search', parseAsString.withDefault('').withOptions({ throttleMs: 500, history: 'replace', shallow: false }));
+	const [sort, setSort] = useQueryState('sort', parseAsString.withDefault('createdAt'));
+	const [order, setOrder] = useQueryState('order', parseAsString.withDefault('desc'));
+	const [minServings, setMinServings] = useQueryState('minServings', parseAsInteger);
+	const [maxServings, setMaxServings] = useQueryState('maxServings', parseAsInteger);
+	const [maxTime, setMaxTime] = useQueryState('maxTime', parseAsInteger);
+
+	// Client-side filter states
+	const [selectedTags, setSelectedTags] = useQueryState('tags', parseAsArrayOf(parseAsString).withDefault([]));
 	const [selectionMode, setSelectionMode] = useState(false);
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
 	const { data: recipes, isLoading, error } = useQuery(
-		recipesQuery(familyId || "", {
-			enabled: !!familyId,
-		})
+		recipesQuery(
+			familyId || "",
+			{
+				search,
+				sort,
+				order: order as 'asc' | 'desc',
+				minServings: minServings ?? undefined,
+				maxServings: maxServings ?? undefined,
+				maxTime: maxTime ?? undefined,
+			},
+			{
+				enabled: !!familyId,
+			}
+		)
 	);
 
-	// Get all unique tags from recipes
+	// Get all unique tags from recipes (client-side aggregation of current page results)
 	const allTags = useMemo(() => {
 		if (!recipes) return [];
 		const tagSet = new Set<string>();
@@ -56,27 +86,15 @@ export function RecipesPage() {
 		return Array.from(tagSet).sort();
 	}, [recipes]);
 
-	// Filter recipes based on search and tags
+	// Filter recipes based on tags (client-side)
 	const filteredRecipes = useMemo(() => {
 		if (!recipes) return [];
+		if (selectedTags.length === 0) return recipes;
+
 		return recipes.filter((recipe) => {
-			// Search filter
-			const matchesSearch =
-				searchQuery === "" ||
-				recipe.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				recipe.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				(recipe.tags as string[]).some((tag) =>
-					tag.toLowerCase().includes(searchQuery.toLowerCase())
-				);
-
-			// Tag filter
-			const matchesTags =
-				selectedTags.length === 0 ||
-				selectedTags.every((tag) => (recipe.tags as string[]).includes(tag));
-
-			return matchesSearch && matchesTags;
+			return selectedTags.every((tag) => (recipe.tags as string[]).includes(tag));
 		});
-	}, [recipes, searchQuery, selectedTags]);
+	}, [recipes, selectedTags]);
 
 	const bulkDeleteMutation = useMutation({
 		mutationFn: async (ids: string[]) => {
@@ -105,8 +123,13 @@ export function RecipesPage() {
 	};
 
 	const clearFilters = () => {
-		setSearchQuery("");
-		setSelectedTags([]);
+		setSearch(null);
+		setSelectedTags(null);
+		setMinServings(null);
+		setMaxServings(null);
+		setMaxTime(null);
+		setSort(null);
+		setOrder(null);
 	};
 
 	const toggleSelection = (id: string) => {
@@ -222,21 +245,111 @@ export function RecipesPage() {
 						<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
 						<Input
 							placeholder="Search recipes..."
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
+							value={search || ''}
+							onChange={(e) => setSearch(e.target.value || null)}
 							className="pl-9"
 						/>
-						{searchQuery && (
+						{search && (
 							<button
-								onClick={() => setSearchQuery("")}
+								onClick={() => setSearch(null)}
 								className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
 							>
 								<X className="w-4 h-4" />
 							</button>
 						)}
 					</div>
+
+					{/* Sort Dropdown */}
 					<DropdownMenu>
-						<DropdownMenuTrigger>
+						<DropdownMenuTrigger asChild>
+							<Button variant="outline">
+								<ArrowUpDown className="w-4 h-4 mr-2" />
+								Sort
+								<ChevronDown className="w-3 h-3 ml-2 opacity-50" />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end">
+							<DropdownMenuCheckboxItem checked={sort === 'createdAt'} onCheckedChange={() => setSort('createdAt')}>
+								Newest First
+							</DropdownMenuCheckboxItem>
+							<DropdownMenuCheckboxItem checked={sort === 'title'} onCheckedChange={() => setSort('title')}>
+								Alphabetical
+							</DropdownMenuCheckboxItem>
+							<DropdownMenuCheckboxItem checked={sort === 'totalTime'} onCheckedChange={() => setSort('totalTime')}>
+								Total Time
+							</DropdownMenuCheckboxItem>
+							<DropdownMenuCheckboxItem checked={sort === 'ingredientCount'} onCheckedChange={() => setSort('ingredientCount')}>
+								Ingredient Count
+							</DropdownMenuCheckboxItem>
+							<div className="border-t my-1" />
+							<DropdownMenuCheckboxItem checked={order === 'asc'} onCheckedChange={() => setOrder('asc')}>
+								Ascending
+							</DropdownMenuCheckboxItem>
+							<DropdownMenuCheckboxItem checked={order === 'desc'} onCheckedChange={() => setOrder('desc')}>
+								Descending
+							</DropdownMenuCheckboxItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
+
+					{/* Filters Popover */}
+					<Popover>
+						<PopoverTrigger asChild>
+							<Button variant="outline">
+								<SlidersHorizontal className="w-4 h-4 mr-2" />
+								Filters
+								{(minServings || maxServings || maxTime) && (
+									<Badge variant="secondary" className="ml-2 bg-primary/20">
+										Active
+									</Badge>
+								)}
+							</Button>
+						</PopoverTrigger>
+						<PopoverContent className="w-80" align="end">
+							<div className="grid gap-4">
+								<div className="space-y-2">
+									<h4 className="font-medium leading-none">Filters</h4>
+									<p className="text-sm text-muted-foreground">
+										Refine your recipe list
+									</p>
+								</div>
+								<div className="grid gap-4">
+									<div className="grid gap-2">
+										<Label>Servings</Label>
+										<div className="flex items-center gap-2">
+											<Input
+												type="number"
+												placeholder="Min"
+												className="h-8"
+												value={minServings ?? ''}
+												onChange={e => setMinServings(e.target.value ? Number(e.target.value) : null)}
+											/>
+											<span className="text-muted-foreground">-</span>
+											<Input
+												type="number"
+												placeholder="Max"
+												className="h-8"
+												value={maxServings ?? ''}
+												onChange={e => setMaxServings(e.target.value ? Number(e.target.value) : null)}
+											/>
+										</div>
+									</div>
+									<div className="grid gap-2">
+										<Label>Max Time (minutes)</Label>
+										<Input
+											type="number"
+											className="h-8"
+											placeholder="e.g. 60"
+											value={maxTime ?? ''}
+											onChange={e => setMaxTime(e.target.value ? Number(e.target.value) : null)}
+										/>
+									</div>
+								</div>
+							</div>
+						</PopoverContent>
+					</Popover>
+
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
 							<Button variant="outline">
 								<Filter className="w-4 h-4 mr-2" />
 								Tags
@@ -263,7 +376,7 @@ export function RecipesPage() {
 							)}
 						</DropdownMenuContent>
 					</DropdownMenu>
-					{(searchQuery || selectedTags.length > 0) && (
+					{(search || selectedTags.length > 0 || minServings || maxServings || maxTime || sort !== 'createdAt') && (
 						<Button variant="ghost" onClick={clearFilters}>
 							Clear
 						</Button>
@@ -358,7 +471,7 @@ export function RecipesPage() {
 								if (selectionMode) {
 									toggleSelection(recipe.id);
 								} else {
-									navigate(`/recipes/${recipe.id}`);
+									navigate(`/recipes/${recipe.id}`, { viewTransition: true });
 								}
 							}}
 						>

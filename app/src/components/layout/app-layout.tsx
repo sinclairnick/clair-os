@@ -1,5 +1,6 @@
 import { useNavigate, Navigate, Outlet, useLocation } from "react-router";
 import { useEffect } from "react";
+import { NuqsAdapter } from 'nuqs/adapters/react'
 import { useAuth } from "@/components/auth-provider";
 import { Sidebar } from "./sidebar";
 import { MobileNav } from "./mobile-nav";
@@ -115,27 +116,29 @@ export function AppLayout() {
 	}
 
 	return (
-		<div className="min-h-screen bg-background text-foreground">
-			<div className="flex h-screen overflow-hidden">
-				{/* Desktop Sidebar */}
-				<aside className="hidden md:flex md:w-64 md:flex-shrink-0">
-					<div className="flex flex-col w-full bg-sidebar border-r border-sidebar-border h-full">
-						<Sidebar />
-					</div>
-				</aside>
+		<NuqsAdapter>
+			<div className="min-h-screen bg-background text-foreground">
+				<div className="flex h-screen overflow-hidden">
+					{/* Desktop Sidebar */}
+					<aside className="hidden md:flex md:w-64 md:flex-shrink-0">
+						<div className="flex flex-col w-full bg-sidebar border-r border-sidebar-border h-full">
+							<Sidebar />
+						</div>
+					</aside>
 
-				{/* Main content */}
-				<main className="flex-1 overflow-y-auto pb-16 md:pb-0 h-full">
-					<div className="container mx-auto p-4 md:p-6 lg:p-8">
-						<Outlet />
-					</div>
-				</main>
-			</div>
+					{/* Main content */}
+					<main className="flex-1 overflow-y-auto pb-16 md:pb-0 h-full">
+						<div className="container mx-auto p-4 md:p-6 lg:p-8">
+							<Outlet />
+						</div>
+					</main>
+				</div>
 
-			{/* Mobile bottom nav */}
-			<div className="md:hidden">
-				<MobileNav />
+				{/* Mobile bottom nav */}
+				<div className="md:hidden">
+					<MobileNav />
+				</div>
 			</div>
-		</div>
+		</NuqsAdapter>
 	);
 }

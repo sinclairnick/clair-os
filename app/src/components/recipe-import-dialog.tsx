@@ -229,8 +229,6 @@ export function RecipeImportDialog({ trigger }: RecipeImportDialogProps) {
 				instructions: recipe.instructions,
 				tags: recipe.tags,
 				ingredients: recipe.ingredients.map((ing) => ({
-					id: "",
-					recipeId: "",
 					name: ing.name,
 					quantity: ing.quantity,
 					unit: ing.unit,
