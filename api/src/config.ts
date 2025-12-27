@@ -8,6 +8,13 @@ const configSchema = z.object({
     OPENFGA_API_URL: z.string(),
     GOOGLE_OAUTH_CLIENT_ID: z.string(),
     GOOGLE_OAUTH_CLIENT_SECRET: z.string(),
+    MINIO_ROOT_USER: z.string().default("clairios_admin"),
+    MINIO_ROOT_PASSWORD: z.string().default("clairios_storage_dev"),
+    MINIO_ENDPOINT: z.string().default("localhost"),
+    MINIO_PORT: z.string().default("9000").transform(Number),
+    MINIO_USE_SSL: z.string().default("false").transform((v) => v === "true"),
+    MINIO_BUCKET: z.string().default("clairios"),
+    MINIO_PUBLIC_URL: z.string().default("http://localhost:9000"),
 })
 
 export const Config = configSchema.parse({
@@ -18,4 +25,11 @@ export const Config = configSchema.parse({
     OPENFGA_API_URL: process.env.OPENFGA_API_URL,
     GOOGLE_OAUTH_CLIENT_ID: process.env.GOOGLE_OAUTH_CLIENT_ID,
     GOOGLE_OAUTH_CLIENT_SECRET: process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+    MINIO_ROOT_USER: process.env.MINIO_ROOT_USER,
+    MINIO_ROOT_PASSWORD: process.env.MINIO_ROOT_PASSWORD,
+    MINIO_ENDPOINT: process.env.MINIO_ENDPOINT,
+    MINIO_PORT: process.env.MINIO_PORT,
+    MINIO_USE_SSL: process.env.MINIO_USE_SSL,
+    MINIO_BUCKET: process.env.MINIO_BUCKET,
+    MINIO_PUBLIC_URL: process.env.MINIO_PUBLIC_URL,
 })

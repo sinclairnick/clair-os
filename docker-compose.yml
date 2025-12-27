@@ -1,4 +1,22 @@
 services:
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-clairios_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-clairios_storage_dev}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -55,10 +73,14 @@ services:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-dev_secret_change_in_production}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3001}
       OPENFGA_API_URL: http://openfga:8080
+      MINIO_ENDPOINT: minio
+      MINIO_PUBLIC_URL: http://localhost:9000
     depends_on:
       db:
         condition: service_healthy
       openfga:
+        condition: service_started
+      minio:
         condition: service_started
     ports:
       - "3001:3001"
@@ -77,3 +99,4 @@ services:
 
 volumes:
   postgres_data:
+  minio_data:

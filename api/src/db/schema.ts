@@ -109,6 +109,7 @@ export const recipes = pgTable('recipes', {
   title: text('title').notNull(),
   description: text('description'),
   servings: integer('servings').notNull().default(4),
+  yield: text('yield'),
   prepTimeMinutes: integer('prep_time_minutes'),
   cookTimeMinutes: integer('cook_time_minutes'),
   instructions: text('instructions').notNull().default(''),

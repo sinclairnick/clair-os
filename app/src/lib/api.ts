@@ -6,12 +6,17 @@ type FetchOptions = RequestInit & {
 };
 
 class ApiError extends Error {
+  status: number;
+  statusText: string;
+
   constructor(
-    public status: number,
-    public statusText: string,
+    status: number,
+    statusText: string,
     message: string
   ) {
     super(message);
+    this.status = status;
+    this.statusText = statusText;
     this.name = 'ApiError';
   }
 }
@@ -28,13 +33,18 @@ async function apiFetch<T>(
     url += `?${searchParams.toString()}`;
   }
 
+  const headers: Record<string, string> = {
+    ...fetchOptions.headers as Record<string, string>,
+  };
+
+  if (!(fetchOptions.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const response = await fetch(url, {
     ...fetchOptions,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...fetchOptions.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -71,6 +81,7 @@ export interface RecipeResponse {
   title: string;
   description?: string;
   servings: number;
+  yield?: string;
   prepTimeMinutes?: number;
   cookTimeMinutes?: number;
   instructions: string;
@@ -324,6 +335,17 @@ export const api = {
       apiFetch<TaskResponse>(`/tasks/${id}/reopen`, { method: 'POST' }),
     delete: (id: string) =>
       apiFetch<{ success: boolean }>(`/tasks/${id}`, { method: 'DELETE' }),
+  },
+  // Storage
+  storage: {
+    upload: (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiFetch<{ url: string }>('/storage/upload', {
+        method: 'POST',
+        body: formData,
+      });
+    },
   },
 };
 

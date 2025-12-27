@@ -7,6 +7,24 @@
 # - API and App with source code mounted for live reloading
 
 services:
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-clairios_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-clairios_storage_dev}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -78,6 +96,7 @@ services:
     environment:
       DATABASE_URL: postgres://clairios:${DB_PASSWORD:-clairios_dev}@db:5432/clairios
       OPENFGA_API_URL: http://openfga:8080
+      MINIO_ENDPOINT: minio
       PORT: 3001
       CI: true
     volumes:
@@ -91,6 +110,8 @@ services:
       db:
         condition: service_healthy
       openfga:
+        condition: service_started
+      minio:
         condition: service_started
       db-migrate:
         condition: service_completed_successfully
@@ -122,3 +143,4 @@ volumes:
   app_node_modules:
   app_pkg_node_modules:
   app_shared_node_modules:
+  minio_data:

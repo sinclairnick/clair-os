@@ -37,6 +37,7 @@ const recipeFormSchema = z.object({
 	title: z.string().min(1, "Title is required"),
 	description: z.string().optional(),
 	servings: z.number().min(1).default(4),
+	yield: z.string().optional(),
 	prepTimeMinutes: z.number().optional(),
 	cookTimeMinutes: z.number().optional(),
 	instructions: z.string().default(""),
@@ -63,6 +64,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 			title: "",
 			description: "",
 			servings: 4,
+			yield: "",
 			prepTimeMinutes: 0,
 			cookTimeMinutes: 0,
 			instructions: "",
@@ -99,6 +101,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 				title: recipe.title,
 				description: recipe.description || "",
 				servings: recipe.servings,
+				yield: recipe.yield || "",
 				prepTimeMinutes: recipe.prepTimeMinutes ?? 0,
 				cookTimeMinutes: recipe.cookTimeMinutes ?? 0,
 				instructions: recipe.instructions,
@@ -128,6 +131,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 				title: data.title,
 				description: data.description || undefined,
 				servings: data.servings,
+				yield: data.yield || undefined,
 				prepTimeMinutes: data.prepTimeMinutes,
 				cookTimeMinutes: data.cookTimeMinutes,
 				instructions: instructionsString,
@@ -137,7 +141,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 					id: ing.id,
 					recipeId: "", // This will be set on the backend
 					name: ing.name,
-					quantity: ing.quantity ? parseFloat(ing.quantity) : undefined,
+					quantity: ing.quantity ? parseFloat(ing.quantity) : 1,
 					unit: ing.unit || "",
 				})),
 			};
@@ -426,6 +430,15 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 									)}
 								/>
 							</div>
+							<div>
+								<label className="text-sm font-medium flex items-center gap-1 mb-1">
+									Yield
+								</label>
+								<Input
+									placeholder="e.g. 12 cookies"
+									{...form.register("yield")}
+								/>
+							</div>
 							<div className="grid grid-cols-2 gap-3">
 								<div>
 									<label className="text-sm font-medium flex items-center gap-1 mb-1">
@@ -519,27 +532,77 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 					</Card>
 
 					{/* Image */}
-					<Card>
-						<CardHeader className="pb-3">
-							<CardTitle>Image</CardTitle>
+					<Card className="overflow-hidden">
+						{form.watch("imageUrl") && (
+							<div className="aspect-video w-full overflow-hidden border-b">
+								<img
+									src={form.watch("imageUrl")}
+									alt="Recipe preview"
+									className="w-full h-full object-cover"
+									onError={(e) => {
+										(e.target as HTMLImageElement).style.display = 'none';
+									}}
+								/>
+							</div>
+						)}
+						<CardHeader className="pb-3 px-4">
+							<div className="flex items-center justify-between gap-2">
+								<CardTitle>Image</CardTitle>
+								{form.watch("imageUrl") && (
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										className="h-7 px-2 text-muted-foreground hover:text-destructive"
+										onClick={() => {
+											form.setValue("imageUrl", "");
+											// Also clear file input if possible
+											const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+											if (fileInput) fileInput.value = '';
+										}}
+									>
+										<X className="w-3.5 h-3.5 mr-1" />
+										Clear
+									</Button>
+								)}
+							</div>
 						</CardHeader>
-						<CardContent>
+						<CardContent className="space-y-4">
+							<div className="space-y-2">
+								<label className="text-sm font-medium">Upload Image</label>
+								<div className="flex gap-2">
+									<Input
+										type="file"
+										accept="image/*"
+										onChange={async (e) => {
+											const file = e.target.files?.[0];
+											if (file) {
+												try {
+													const { url } = await api.storage.upload(file);
+													form.setValue("imageUrl", url);
+													toast.success("Image uploaded");
+												} catch (error) {
+													toast.error("Failed to upload image");
+												}
+											}
+										}}
+									/>
+								</div>
+							</div>
+
+							<div className="relative">
+								<div className="absolute inset-0 flex items-center">
+									<span className="w-full border-t" />
+								</div>
+								<div className="relative flex justify-center text-xs uppercase">
+									<span className="bg-background px-2 text-muted-foreground">Or Use URL</span>
+								</div>
+							</div>
+
 							<Input
 								placeholder="Image URL"
 								{...form.register("imageUrl")}
 							/>
-							{form.getValues("imageUrl") && (
-								<div className="mt-3 aspect-video rounded-lg overflow-hidden bg-muted">
-									<img
-										src={form.getValues("imageUrl")}
-										alt="Recipe preview"
-										className="w-full h-full object-cover"
-										onError={(e) => {
-											(e.target as HTMLImageElement).style.display = 'none';
-										}}
-									/>
-								</div>
-							)}
 						</CardContent>
 					</Card>
 				</div>

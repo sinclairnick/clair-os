@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import { createReactInlineContentSpec, useBlockNoteEditor } from '@blocknote/react';
 import {
 	Tooltip,
@@ -124,14 +123,6 @@ export const TimerMention = createReactInlineContentSpec(
 			const isPaused = timerState?.status === 'paused';
 			const isCompleted = timerState?.status === 'completed';
 			const hasStarted = timerState && (timerState.status !== 'idle' || timerState.remainingMs < ms);
-
-			// Ensure timer is in store with its metadata
-			// eslint-disable-next-line react-hooks/rules-of-hooks
-			useEffect(() => {
-				if (!isEditable && propId && recipeId) {
-					addTimer(propId, duration, ms, recipeId);
-				}
-			}, [addTimer, duration, isEditable, ms, propId, recipeId]);
 
 			const handleClick = (e: React.MouseEvent) => {
 				e.stopPropagation();

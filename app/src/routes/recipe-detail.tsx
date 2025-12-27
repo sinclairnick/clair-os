@@ -188,6 +188,7 @@ export function RecipeDetailPage() {
 					<div className="flex items-center gap-1">
 						<Users className="w-4 h-4" />
 						{recipe.servings} servings
+						{recipe.yield && <span className="text-muted-foreground ml-1">({recipe.yield})</span>}
 					</div>
 				</div>
 				{recipe.tags.length > 0 && (

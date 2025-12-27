@@ -15,6 +15,13 @@
       "when": 1766831867567,
       "tag": "0001_left_gambit",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1766834798669,
+      "tag": "0002_long_the_watchers",
+      "breakpoints": true
     }
   ]
 }

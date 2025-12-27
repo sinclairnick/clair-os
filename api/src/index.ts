@@ -46,6 +46,8 @@ app.route('/api/families', familiesRouter);
 app.route('/api/recipes', recipesRouter);
 app.route('/api/shopping', shoppingRouter);
 app.route('/api/tasks', tasksRouter);
+import { storageRouter } from './routes/storage.js';
+app.route('/api/storage', storageRouter);
 
 // Start server
 const port = parseInt(process.env.PORT || '3001', 10);

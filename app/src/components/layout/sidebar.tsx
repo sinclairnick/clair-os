@@ -40,9 +40,8 @@ export function Sidebar() {
 	const { user, families, currentFamily, setCurrentFamilyId, signOut } = useAuth();
 	const { timers, startTimer, pauseTimer, resetTimer, removeTimer } = useTimerStore();
 
-	// Show all timers that were "opted in" (are in the store)
-	// They only leave the store when removeTimer(id) is called (the X button)
-	const activeTimers = Object.values(timers);
+	// Show active/paused/completed timers in the sidebar
+	const activeTimers = Object.values(timers).filter(timer => timer.status !== 'idle');
 
 	return (
 		<div className="flex flex-col h-full bg-sidebar">
