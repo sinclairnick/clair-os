@@ -230,3 +230,50 @@
   --bn-colors-editor-background: transparent;
   --bn-colors-editor-text: var(--foreground);
 }
+
+/* Checkable headings in Recipe Viewer */
+.recipe-viewer-checkable h1,
+.recipe-viewer-checkable h2,
+.recipe-viewer-checkable h3 {
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s ease;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.recipe-viewer-checkable h1::before,
+.recipe-viewer-checkable h2::before,
+.recipe-viewer-checkable h3::before {
+    content: "";
+    display: inline-block;
+    width: 1.1rem;
+    height: 1.1rem;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: var(--card);
+}
+
+.recipe-viewer-checkable .bn-block.is-checked h1::before,
+.recipe-viewer-checkable .bn-block.is-checked h2::before,
+.recipe-viewer-checkable .bn-block.is-checked h3::before {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+    background-size: 80%;
+    background-position: center;
+    background-repeat: no-repeat;
+    transform: scale(1.05);
+}
+
+.recipe-viewer-checkable .bn-block.is-checked {
+    opacity: 0.4;
+}
+
+.recipe-viewer-checkable .bn-block.is-checked .bn-heading-content {
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+}

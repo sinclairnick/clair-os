@@ -11,6 +11,7 @@ import {
 	RecipeMention,
 } from './blocknote-schema';
 import { useTheme } from '@/components/theme-provider';
+import { cn } from '@/lib/utils';
 
 // Use the same schema as the editor
 const schema = BlockNoteSchema.create({
@@ -117,11 +118,30 @@ export function RecipeViewer({ content, className, recipeId, onIngredientHover }
 
 	const { resolvedTheme } = useTheme();
 
+	// Handle checking off steps
+	const handleClick = (e: React.MouseEvent) => {
+		const target = e.target as HTMLElement;
+
+		// Don't toggle if clicking an interactive element like a mention or a button
+		if (target.closest('.ingredient-mention, .timer-mention, button, a')) {
+			return;
+		}
+
+		const heading = target.closest('h1, h2, h3');
+		if (heading) {
+			const block = heading.closest('.bn-block');
+			if (block) {
+				block.classList.toggle('is-checked');
+			}
+		}
+	};
+
 	return (
 		<div
-			className={className}
+			className={cn('recipe-viewer-checkable', className)}
 			onMouseOver={handleMouseOver}
 			onMouseOut={handleMouseOut}
+			onClick={handleClick}
 		>
 			<BlockNoteView
 				editor={editor}

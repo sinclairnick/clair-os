@@ -10,12 +10,12 @@ import { familiesRouter } from './routes/families.js';
 
 // Define custom context variables
 type Variables = {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-  };
-  familyId: string;
+	user: {
+		id: string;
+		email: string;
+		name: string;
+	};
+	familyId: string;
 };
 
 const app = new Hono<{ Variables: Variables }>();
@@ -23,22 +23,22 @@ const app = new Hono<{ Variables: Variables }>();
 // Middleware
 app.use('*', logger());
 app.use('/*', cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
-  credentials: true,
+	origin: ['http://localhost:5173', 'http://localhost:3000'],
+	credentials: true,
 }));
 
 // Health check
 app.get('/', (c) => {
-  return c.json({ status: 'ok', name: 'ClairOS API', version: '0.1.0' });
+	return c.json({ status: 'ok', name: 'ClairOS API', version: '0.1.0' });
 });
 
 app.get('/api/health', (c) => {
-  return c.json({ status: 'healthy', timestamp: new Date().toISOString() });
+	return c.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
 // BetterAuth routes - handles all /api/auth/* paths
 app.on(['GET', 'POST'], '/api/auth/*', (c) => {
-  return auth.handler(c.req.raw);
+	return auth.handler(c.req.raw);
 });
 
 // API routes
@@ -55,8 +55,8 @@ const port = parseInt(process.env.PORT || '3001', 10);
 console.log(`🚀 ClairOS API running on http://localhost:${port}`);
 
 serve({
-  fetch: app.fetch,
-  port,
+	fetch: app.fetch,
+	port,
 });
 
 export default app;

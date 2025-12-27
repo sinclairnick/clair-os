@@ -11,9 +11,25 @@ import {
 	DropdownMenuCheckboxItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Clock, Users, Loader2, Search, Filter, X } from "lucide-react";
+import {
+	Plus,
+	Clock,
+	Users,
+	Loader2,
+	Search,
+	Filter,
+	X,
+	Upload,
+	Trash2,
+	CheckCircle2,
+	ListChecks
+} from "lucide-react";
 import { useCurrentFamilyId } from "@/components/auth-provider";
 import { recipesQuery, queryKeys } from "@/lib/queries";
+import { RecipeImportDialog } from "@/components/recipe-import-dialog";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export function RecipesPage() {
 	const navigate = useNavigate();
@@ -21,6 +37,8 @@ export function RecipesPage() {
 	const queryClient = useQueryClient();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedTags, setSelectedTags] = useState<string[]>([]);
+	const [selectionMode, setSelectionMode] = useState(false);
+	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
 	const { data: recipes, isLoading, error } = useQuery(
 		recipesQuery(familyId || "", {
@@ -60,6 +78,26 @@ export function RecipesPage() {
 		});
 	}, [recipes, searchQuery, selectedTags]);
 
+	const bulkDeleteMutation = useMutation({
+		mutationFn: async (ids: string[]) => {
+			// Sequential deletion to maintain permission checks
+			for (const id of ids) {
+				await api.recipes.delete(id);
+			}
+		},
+		onSuccess: () => {
+			if (familyId) {
+				queryClient.invalidateQueries({ queryKey: queryKeys.recipes.all(familyId) });
+			}
+			toast.success(`${selectedIds.size} recipes deleted`);
+			setSelectionMode(false);
+			setSelectedIds(new Set());
+		},
+		onError: () => {
+			toast.error("Failed to delete some recipes");
+		}
+	});
+
 	const toggleTag = (tag: string) => {
 		setSelectedTags((prev) =>
 			prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
@@ -69,6 +107,34 @@ export function RecipesPage() {
 	const clearFilters = () => {
 		setSearchQuery("");
 		setSelectedTags([]);
+	};
+
+	const toggleSelection = (id: string) => {
+		setSelectedIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(id)) {
+				next.delete(id);
+			} else {
+				next.add(id);
+			}
+			return next;
+		});
+	};
+
+	const selectAll = () => {
+		const allIds = filteredRecipes.map(r => r.id);
+		setSelectedIds(new Set(allIds));
+	};
+
+	const deselectAll = () => {
+		setSelectedIds(new Set());
+	};
+
+	const handleBulkDelete = () => {
+		if (selectedIds.size === 0) return;
+		if (window.confirm(`Are you sure you want to delete ${selectedIds.size} recipes?`)) {
+			bulkDeleteMutation.mutate(Array.from(selectedIds));
+		}
 	};
 
 	if (!familyId) {
@@ -86,68 +152,141 @@ export function RecipesPage() {
 					<h1 className="text-2xl font-bold text-foreground">Recipes</h1>
 					<p className="text-muted-foreground">Your family's recipe collection</p>
 				</div>
-				<Button onClick={() => navigate("/recipes/new")}>
-					<Plus className="w-4 h-4 mr-2" />
-					Add Recipe
-				</Button>
+				<div className="flex items-center gap-2">
+					{selectionMode ? (
+						<>
+							<Button variant="ghost" onClick={() => {
+								setSelectionMode(false);
+								setSelectedIds(new Set());
+							}}>
+								Cancel
+							</Button>
+							<DropdownMenu>
+								<DropdownMenuTrigger>
+									<Button variant="outline">
+										<ListChecks className="w-4 h-4 mr-2" />
+										Selection
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end">
+									<DropdownMenuCheckboxItem
+										checked={selectedIds.size === filteredRecipes.length && filteredRecipes.length > 0}
+										onCheckedChange={() => {
+											selectedIds.size === filteredRecipes.length ? deselectAll() : selectAll();
+										}}
+									>
+										{selectedIds.size === filteredRecipes.length ? "Deselect All" : "Select All"}
+									</DropdownMenuCheckboxItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+							<Button
+								variant="destructive"
+								onClick={handleBulkDelete}
+								disabled={selectedIds.size === 0 || bulkDeleteMutation.isPending}
+							>
+								{bulkDeleteMutation.isPending ? (
+									<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+								) : (
+									<Trash2 className="w-4 h-4 mr-2" />
+								)}
+								Delete ({selectedIds.size})
+							</Button>
+						</>
+					) : (
+						<>
+							<Button variant="outline" onClick={() => setSelectionMode(true)}>
+								<CheckCircle2 className="w-4 h-4 mr-2" />
+								Select
+							</Button>
+							<RecipeImportDialog
+								trigger={
+									<Button variant="outline">
+										<Upload className="w-4 h-4 mr-2" />
+										Import
+									</Button>
+								}
+							/>
+							<Button onClick={() => navigate("/recipes/new")}>
+								<Plus className="w-4 h-4 mr-2" />
+								Add Recipe
+							</Button>
+						</>
+					)}
+				</div>
 			</div>
 
 			{/* Search and Filter */}
-			<div className="flex flex-col sm:flex-row gap-3">
-				<div className="relative flex-1">
-					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-					<Input
-						placeholder="Search recipes..."
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-						className="pl-9"
-					/>
-					{searchQuery && (
-						<button
-							onClick={() => setSearchQuery("")}
-							className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-						>
-							<X className="w-4 h-4" />
-						</button>
+			{!selectionMode && (
+				<div className="flex flex-col sm:flex-row gap-3">
+					<div className="relative flex-1">
+						<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+						<Input
+							placeholder="Search recipes..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							className="pl-9"
+						/>
+						{searchQuery && (
+							<button
+								onClick={() => setSearchQuery("")}
+								className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+							>
+								<X className="w-4 h-4" />
+							</button>
+						)}
+					</div>
+					<DropdownMenu>
+						<DropdownMenuTrigger>
+							<Button variant="outline">
+								<Filter className="w-4 h-4 mr-2" />
+								Tags
+								{selectedTags.length > 0 && (
+									<Badge variant="secondary" className="ml-2">
+										{selectedTags.length}
+									</Badge>
+								)}
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end" className="w-48">
+							{allTags.length === 0 ? (
+								<p className="text-sm text-muted-foreground p-2">No tags yet</p>
+							) : (
+								allTags.map((tag) => (
+									<DropdownMenuCheckboxItem
+										key={tag}
+										checked={selectedTags.includes(tag)}
+										onCheckedChange={() => toggleTag(tag)}
+									>
+										{tag}
+									</DropdownMenuCheckboxItem>
+								))
+							)}
+						</DropdownMenuContent>
+					</DropdownMenu>
+					{(searchQuery || selectedTags.length > 0) && (
+						<Button variant="ghost" onClick={clearFilters}>
+							Clear
+						</Button>
 					)}
 				</div>
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button variant="outline">
-							<Filter className="w-4 h-4 mr-2" />
-							Tags
-							{selectedTags.length > 0 && (
-								<Badge variant="secondary" className="ml-2">
-									{selectedTags.length}
-								</Badge>
-							)}
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="end" className="w-48">
-						{allTags.length === 0 ? (
-							<p className="text-sm text-muted-foreground p-2">No tags yet</p>
-						) : (
-							allTags.map((tag) => (
-								<DropdownMenuCheckboxItem
-									key={tag}
-									checked={selectedTags.includes(tag)}
-									onCheckedChange={() => toggleTag(tag)}
-								>
-									{tag}
-								</DropdownMenuCheckboxItem>
-							))
-						)}
-					</DropdownMenuContent>
-				</DropdownMenu>
-				{(searchQuery || selectedTags.length > 0) && (
-					<Button variant="ghost" onClick={clearFilters}>
-						Clear
-					</Button>
-				)}
-			</div>
+			)}
+
+			{/* Selection active info */}
+			{selectionMode && (
+				<div className="bg-primary/10 border border-primary/20 rounded-lg p-3 flex items-center justify-between text-sm">
+					<div className="flex items-center gap-2 font-medium">
+						<ListChecks className="w-4 h-4" />
+						{selectedIds.size} recipes selected
+					</div>
+					<div className="flex gap-2">
+						<Button size="sm" variant="ghost" onClick={selectAll}>Select All</Button>
+						<Button size="sm" variant="ghost" onClick={deselectAll}>Deselect All</Button>
+					</div>
+				</div>
+			)}
 
 			{/* Active filters */}
-			{selectedTags.length > 0 && (
+			{!selectionMode && selectedTags.length > 0 && (
 				<div className="flex flex-wrap gap-2">
 					{selectedTags.map((tag) => (
 						<Badge
@@ -207,9 +346,32 @@ export function RecipesPage() {
 					{filteredRecipes.map((recipe) => (
 						<Card
 							key={recipe.id}
-							className="hover:shadow-md transition-shadow cursor-pointer group"
-							onClick={() => navigate(`/recipes/${recipe.id}`)}
+							className={cn(
+								"hover:shadow-md transition-shadow cursor-pointer group relative overflow-hidden",
+								{
+									"pt-0": recipe.imageUrl != null,
+									"ring-2 ring-primary border-primary":
+										selectionMode && selectedIds.has(recipe.id)
+								}
+							)}
+							onClick={() => {
+								if (selectionMode) {
+									toggleSelection(recipe.id);
+								} else {
+									navigate(`/recipes/${recipe.id}`);
+								}
+							}}
 						>
+							{selectionMode && (
+								<div className="absolute top-2 left-2 z-10">
+									{selectedIds.has(recipe.id) ? (
+										<CheckCircle2 className="w-6 h-6 text-primary fill-background" />
+									) : (
+										<div className="w-6 h-6 rounded-full border-2 border-primary/20 bg-background" />
+									)}
+								</div>
+							)}
+
 							{recipe.imageUrl && (
 								<div className="aspect-video w-full overflow-hidden rounded-t-lg">
 									<img
@@ -266,3 +428,4 @@ export function RecipesPage() {
 		</div>
 	);
 }
+
