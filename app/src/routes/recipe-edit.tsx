@@ -55,6 +55,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 	const queryClient = useQueryClient();
 	const editorRef = useRef<RecipeEditorRef>(null);
 	const [editorKey, setEditorKey] = useState(0);
+	const [shouldFocusLastIngredient, setShouldFocusLastIngredient] = useState(false);
 
 	const form = useForm({
 		resolver: zodResolver(recipeFormSchema),
@@ -74,7 +75,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 
 
 
-	const { fields: ingredientFields, append: appendIngredient, remove: removeIngredient } = useFieldArray({
+	const { fields: ingredientFields, append: appendIngredient, remove: removeIngredientField } = useFieldArray({
 		control: form.control,
 		name: "ingredients",
 	});
@@ -119,6 +120,10 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 
 	const saveMutation = useMutation({
 		mutationFn: async (data: RecipeFormData) => {
+			// Get instructions as JSON string from BlockNote editor
+			const instructionsJSON = editorRef.current?.getJSON();
+			const instructionsString = instructionsJSON ? JSON.stringify(instructionsJSON) : data.instructions;
+
 			const payload = {
 				familyId: familyId!,
 				title: data.title,
@@ -126,14 +131,14 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 				servings: data.servings,
 				prepTimeMinutes: data.prepTimeMinutes,
 				cookTimeMinutes: data.cookTimeMinutes,
-				instructions: editorRef.current?.getHTML() || data.instructions,
+				instructions: instructionsString,
 				tags: data.tags,
 				imageUrl: data.imageUrl || undefined,
 				ingredients: data.ingredients.map((ing) => ({
 					id: ing.id,
-					recipeId: "",
+					recipeId: "", // This will be set on the backend
 					name: ing.name,
-					quantity: ing.quantity ? parseFloat(ing.quantity) : 1,
+					quantity: ing.quantity ? parseFloat(ing.quantity) : undefined,
 					unit: ing.unit || "",
 				})),
 			};
@@ -148,11 +153,14 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 			if (familyId) {
 				queryClient.invalidateQueries({ queryKey: queryKeys.recipes.all(familyId) });
 			}
+			if (recipeId) {
+				queryClient.invalidateQueries({ queryKey: queryKeys.recipes.detail(recipeId) });
+			}
 			toast.success(isNew ? "Recipe created successfully" : "Recipe updated successfully");
 			navigate("/recipes");
 		},
-		onError: () => {
-			toast.error(isNew ? "Failed to create recipe" : "Failed to update recipe");
+		onError: (error: Error) => {
+			toast.error(`Failed to save recipe: ${error.message}`);
 		}
 	});
 
@@ -181,33 +189,35 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 	};
 
 	const handleAddIngredient = () => {
-		appendIngredient({ id: `new-${Date.now()}`, name: "", quantity: "", unit: "" });
+		setShouldFocusLastIngredient(true);
+		appendIngredient({ name: "", quantity: "", unit: "" });
+	};
+
+	const removeIngredient = (index: number) => {
+		removeIngredientField(index);
 	};
 
 	// Handle ingredients extracted from editor mentions
-	const handleIngredientsChange = (mentionedIngredients: IngredientMention[]) => {
-		// Add any new mentioned ingredients to the form that aren't already there
-		mentionedIngredients.forEach((mentioned) => {
+	const handleIngredientsChange = (extractedIngredients: IngredientMention[]) => {
+		setShouldFocusLastIngredient(false);
+
+		extractedIngredients.forEach((mentioned) => {
 			// Check if we already have this ingredient in the form
 			const existingIndex = ingredients.findIndex(
 				(ing) => (ing.id && mentioned.id && ing.id === mentioned.id) ||
-					(ing.name.toLowerCase() === mentioned.name.toLowerCase())
+					(ing.name.trim().toLowerCase() === mentioned.name.trim().toLowerCase())
 			);
 
-			// If it's a new ingredient mentions (either explictly new or just typed text matching nothing)
+			// If it's a new ingredient mentions (either explicitly new or just typed text matching nothing in list)
 			if (existingIndex === -1 && mentioned.name.trim()) {
 				appendIngredient({
-					id: mentioned.id?.startsWith('new-') ? mentioned.id : `mention-${Date.now()}-${Math.random()}`,
+					// If it's a new mention ID, keep it so we can link it. 
+					// If it doesn't have an ID (shouldn't happen for mentions), generate one.
+					id: mentioned.id || `temp-${Date.now()}-${Math.random()}`,
 					name: mentioned.name,
-					quantity: mentioned.quantity?.toString() || "",
+					quantity: mentioned.quantity ? mentioned.quantity.toString() : "",
 					unit: mentioned.unit || "",
 				});
-			} else if (existingIndex === -1 && mentioned.id) {
-				// Case where we have an ID but it wasn't found in the list? Should imply it's existing but maybe removed?
-				// If it's a known ID but not in the list, we should probably add it back if it exists in DB?
-				// But for now, we assume if it's selected from suggestion, it's either in the list or common.
-				// If it came from suggestion list of "existingIngredients", it must be in the form state already 
-				// (since we pass form ingredients to suggestions).
 			}
 		});
 	};
@@ -236,7 +246,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 	}
 
 	return (
-		<form onSubmit={onSubmit} className="space-y-6">
+		<form onSubmit={onSubmit} className="space-y-6 min-h-[150vh]">
 			{/* Datalist for unit suggestions */}
 			<datalist id="unit-suggestions">
 				{COMMON_UNITS.map((unit) => (
@@ -288,7 +298,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 								<Input
 									placeholder="Recipe title"
 									{...form.register("title")}
-									className={cn("text-lg", form.formState.errors.title && "border-destructive")}
+									className={cn("!text-2xl font-bold py-6", form.formState.errors.title && "border-destructive")}
 								/>
 								{form.formState.errors.title && (
 									<p className="text-sm text-destructive mt-1">{form.formState.errors.title.message}</p>
@@ -327,6 +337,13 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 										<Input
 											placeholder="Qty"
 											{...form.register(`ingredients.${index}.quantity`)}
+											ref={(e) => {
+												form.register(`ingredients.${index}.quantity`).ref(e);
+												if (e && shouldFocusLastIngredient && index === ingredientFields.length - 1) {
+													e.focus();
+													setShouldFocusLastIngredient(false);
+												}
+											}}
 											className="w-16 h-9"
 										/>
 										<Input

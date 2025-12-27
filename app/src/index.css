@@ -2,6 +2,10 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
+@import "@blocknote/shadcn/style.css";
+
+/* BlockNote Tailwind integration */
+@source "../node_modules/@blocknote/shadcn";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -15,7 +19,7 @@
     --secondary-foreground: oklch(0.25 0.04 145);
     
     /* Accent: Warm gold */
-    --accent: oklch(0.82 0.12 85);
+    --accent: oklch(84.951% 0.14184 94.765);
     --accent-foreground: oklch(0.25 0.05 85);
     
     /* Backgrounds: Cream/Off-white */
@@ -180,4 +184,32 @@
   .dark {
     color-scheme: dark;
   }
+}
+
+/* BlockNote editor customizations */
+.bn-editor {
+  min-height: 200px;
+}
+
+/* Mute the side menu (plus/drag handle buttons) */
+.bn-side-menu {
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
+.bn-side-menu:hover,
+.bn-container:has(.bn-block:hover) .bn-side-menu {
+  opacity: 1;
+}
+
+.bn-side-menu [data-test="dragHandle"],
+.bn-side-menu [data-test="sideMenuButton"] {
+  background: var(--muted) !important;
+  color: var(--muted-foreground) !important;
+}
+
+.bn-side-menu [data-test="dragHandle"]:hover,
+.bn-side-menu [data-test="sideMenuButton"]:hover {
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
 }

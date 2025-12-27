@@ -13,10 +13,12 @@ import {
 } from "@/components/ui/dialog";
 import { ArrowLeft, Loader2, Clock, Users, Edit, ShoppingCart, Play, Pause, RotateCcw } from "lucide-react";
 import { useCurrentFamilyId } from "@/components/auth-provider";
+import { RecipeViewer } from "@/components/editor";
 import { api, type RecipeResponse } from "@/lib/api";
 import { queryKeys, shoppingListsQuery } from "@/lib/queries";
 import { useAppStore } from "@/lib/store";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface ActiveTimer {
 	id: string;
@@ -33,8 +35,8 @@ export function RecipeDetailPage() {
 	const queryClient = useQueryClient();
 
 	const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
-	const [checkedSteps, setCheckedSteps] = useState<Set<string>>(new Set());
 	const [activeTimers, setActiveTimers] = useState<ActiveTimer[]>([]);
+	const [highlightedIngredientName, setHighlightedIngredientName] = useState<string | null>(null);
 	const [addToListDialogOpen, setAddToListDialogOpen] = useState(false);
 
 	const { lastShoppingListId, setLastShoppingListId } = useAppStore();
@@ -181,18 +183,6 @@ export function RecipeDetailPage() {
 		});
 	};
 
-	const toggleStep = (stepId: string) => {
-		setCheckedSteps(prev => {
-			const next = new Set(prev);
-			if (next.has(stepId)) {
-				next.delete(stepId);
-			} else {
-				next.add(stepId);
-			}
-			return next;
-		});
-	};
-
 	const toggleTimer = (timerId: string) => {
 		setActiveTimers(prev =>
 			prev.map(t => t.id === timerId ? { ...t, isRunning: !t.isRunning } : t)
@@ -220,42 +210,6 @@ export function RecipeDetailPage() {
 		}
 		return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 	};
-
-	// Process instructions to add interactive elements
-	const processInstructions = (html: string) => {
-		// Add click handlers to headings to make them checkable
-		let processed = html.replace(/<h([23])([^>]*)>(.*?)<\/h\1>/g, (match, level, attrs, content) => {
-			const stepId = `heading-${content.slice(0, 20).replace(/\W/g, '-')}`;
-			const isChecked = checkedSteps.has(stepId);
-			return `
-        <div class="flex items-start gap-3 my-4 group cursor-pointer step-heading" data-step-id="${stepId}">
-          <div class="mt-1 w-5 h-5 rounded border-2 border-primary flex items-center justify-center shrink-0 ${isChecked ? 'bg-primary' : ''}">
-            ${isChecked ? '<svg class="w-3 h-3 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}
-          </div>
-          <h${level} class="${isChecked ? 'line-through text-muted-foreground' : ''}"${attrs}>${content}</h${level}>
-        </div>
-      `;
-		});
-
-		return processed;
-	};
-
-	// Handle step heading clicks
-	useEffect(() => {
-		const handleStepClick = (e: MouseEvent) => {
-			const target = e.target as HTMLElement;
-			const stepHeading = target.closest('.step-heading') as HTMLElement;
-			if (stepHeading) {
-				const stepId = stepHeading.dataset.stepId;
-				if (stepId) {
-					toggleStep(stepId);
-				}
-			}
-		};
-
-		document.addEventListener('click', handleStepClick);
-		return () => document.removeEventListener('click', handleStepClick);
-	}, []);
 
 	if (!familyId) {
 		return (
@@ -318,14 +272,14 @@ export function RecipeDetailPage() {
 					<p className="text-lg text-muted-foreground mb-4">{recipe.description}</p>
 				)}
 				<div className="flex items-center gap-6 text-sm text-muted-foreground mb-4">
-					{(recipe.prepTimeMinutes || recipe.cookTimeMinutes) && (
+					{(recipe.prepTimeMinutes || recipe.cookTimeMinutes) ? (
 						<div className="flex items-center gap-1">
 							<Clock className="w-4 h-4" />
 							{recipe.prepTimeMinutes && `${recipe.prepTimeMinutes}m prep`}
 							{recipe.prepTimeMinutes && recipe.cookTimeMinutes && ' + '}
 							{recipe.cookTimeMinutes && `${recipe.cookTimeMinutes}m cook`}
 						</div>
-					)}
+					) : null}
 					<div className="flex items-center gap-1">
 						<Users className="w-4 h-4" />
 						{recipe.servings} servings
@@ -351,12 +305,24 @@ export function RecipeDetailPage() {
 							</p>
 						</CardHeader>
 						<CardContent>
-							<div
-								className="prose prose-sm max-w-none
-                  prose-headings:font-semibold prose-headings:text-foreground
-                  prose-p:text-foreground prose-p:leading-relaxed
-                  [&_.timer-mention]:cursor-pointer [&_.timer-mention:hover]:scale-105 [&_.timer-mention]:transition-transform"
-								dangerouslySetInnerHTML={{ __html: processInstructions(recipe.instructions) }}
+							<RecipeViewer
+								content={recipe.instructions}
+								className="[&_.timer-mention]:cursor-pointer [&_.timer-mention:hover]:scale-105 [&_.timer-mention]:transition-transform"
+								onTimerClick={(duration, durationMs) => {
+									// Add or focus timer
+									const existingTimer = activeTimers.find(t => t.duration === duration);
+									if (!existingTimer) {
+										setActiveTimers(prev => [...prev, {
+											id: `${duration}-${Date.now()}`,
+											duration,
+											durationMs,
+											remainingMs: durationMs,
+											isRunning: false,
+										}]);
+									}
+									setTimerDialogOpen(true);
+								}}
+								onIngredientHover={(name) => setHighlightedIngredientName(name)}
 							/>
 						</CardContent>
 					</Card>
@@ -382,14 +348,22 @@ export function RecipeDetailPage() {
 							</p>
 						</CardHeader>
 						<CardContent>
-							<div className="space-y-2">
+							<div className="space-y-1">
 								{recipe.ingredients?.map((ing, index) => (
-									<div key={ing.id} className="flex items-center gap-3">
+									<div
+										key={ing.id}
+										className={cn(
+											"flex items-center gap-3 p-2 -mx-2 rounded-md transition-all duration-200",
+											highlightedIngredientName && ing.name.trim().toLowerCase() === highlightedIngredientName.trim().toLowerCase()
+												? "bg-primary/10 ring-1 ring-primary shadow-sm scale-[1.02]"
+												: ""
+										)}
+									>
 										<Checkbox
 											checked={checkedIngredients.has(index)}
 											onCheckedChange={() => toggleIngredient(index)}
 										/>
-										<span className={checkedIngredients.has(index) ? 'line-through text-muted-foreground' : ''}>
+										<span className={checkedIngredients.has(index) ? 'line-through text-muted-foreground' : 'text-sm'}>
 											{ing.quantity && `${ing.quantity} `}
 											{ing.unit && `${ing.unit} `}
 											{ing.name}
