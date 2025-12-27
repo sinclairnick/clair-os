@@ -11,22 +11,14 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Loader2, Clock, Users, Edit, ShoppingCart, Play, Pause, RotateCcw } from "lucide-react";
+import { ArrowLeft, Loader2, Users, Edit, ShoppingCart, Clock } from "lucide-react";
 import { useCurrentFamilyId } from "@/components/auth-provider";
 import { RecipeViewer } from "@/components/editor";
-import { api, type RecipeResponse } from "@/lib/api";
+import { api } from "@/lib/api";
 import { queryKeys, shoppingListsQuery } from "@/lib/queries";
 import { useAppStore } from "@/lib/store";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
-interface ActiveTimer {
-	id: string;
-	duration: string;
-	durationMs: number;
-	remainingMs: number;
-	isRunning: boolean;
-}
 
 export function RecipeDetailPage() {
 	const { recipeId } = useParams<{ recipeId: string }>();
@@ -35,14 +27,12 @@ export function RecipeDetailPage() {
 	const queryClient = useQueryClient();
 
 	const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
-	const [activeTimers, setActiveTimers] = useState<ActiveTimer[]>([]);
 	const [highlightedIngredientName, setHighlightedIngredientName] = useState<string | null>(null);
 	const [addToListDialogOpen, setAddToListDialogOpen] = useState(false);
 
 	const { lastShoppingListId, setLastShoppingListId } = useAppStore();
 	const [selectedListId, setSelectedListId] = useState<string>("");
 	const [ingredientsToAdd, setIngredientsToAdd] = useState<Set<number>>(new Set());
-	const [timerDialogOpen, setTimerDialogOpen] = useState(false);
 
 	const { data: recipe, isLoading, error } = useQuery({
 		queryKey: queryKeys.recipes.detail(recipeId || ""),
@@ -63,6 +53,8 @@ export function RecipeDetailPage() {
 			select: (lists) => lists.filter(list => list.status === 'active'),
 		})
 	);
+
+
 
 	useEffect(() => {
 		if (activeShoppingLists?.length == 0) return
@@ -117,60 +109,6 @@ export function RecipeDetailPage() {
 		});
 	};
 
-	// Timer tick
-	useEffect(() => {
-		const interval = setInterval(() => {
-			setActiveTimers(prev =>
-				prev.map(timer => {
-					if (!timer.isRunning || timer.remainingMs <= 0) return timer;
-					const newRemaining = Math.max(0, timer.remainingMs - 1000);
-					if (newRemaining === 0) {
-						// Timer finished - could trigger notification here
-						if ('Notification' in window && Notification.permission === 'granted') {
-							new Notification('Timer Complete!', {
-								body: `${timer.duration} timer has finished`,
-								icon: '/vite.svg',
-							});
-						}
-					}
-					return { ...timer, remainingMs: newRemaining };
-				})
-			);
-		}, 1000);
-
-		return () => clearInterval(interval);
-	}, []);
-
-	// Handle timer button clicks in rendered content
-	useEffect(() => {
-		const handleTimerClick = (e: MouseEvent) => {
-			const target = e.target as HTMLElement;
-			if (target.classList.contains('timer-mention') || target.closest('.timer-mention')) {
-				const button = (target.classList.contains('timer-mention') ? target : target.closest('.timer-mention')) as HTMLElement;
-				const duration = button.dataset.timer;
-				const durationMs = parseInt(button.dataset.timerMs || '60000');
-
-				if (duration) {
-					// Add or focus timer
-					const existingTimer = activeTimers.find(t => t.duration === duration);
-					if (!existingTimer) {
-						setActiveTimers(prev => [...prev, {
-							id: `${duration}-${Date.now()}`,
-							duration,
-							durationMs,
-							remainingMs: durationMs,
-							isRunning: false,
-						}]);
-					}
-					setTimerDialogOpen(true);
-				}
-			}
-		};
-
-		document.addEventListener('click', handleTimerClick);
-		return () => document.removeEventListener('click', handleTimerClick);
-	}, [activeTimers]);
-
 	const toggleIngredient = (index: number) => {
 		setCheckedIngredients(prev => {
 			const next = new Set(prev);
@@ -183,33 +121,6 @@ export function RecipeDetailPage() {
 		});
 	};
 
-	const toggleTimer = (timerId: string) => {
-		setActiveTimers(prev =>
-			prev.map(t => t.id === timerId ? { ...t, isRunning: !t.isRunning } : t)
-		);
-	};
-
-	const resetTimer = (timerId: string) => {
-		setActiveTimers(prev =>
-			prev.map(t => t.id === timerId ? { ...t, remainingMs: t.durationMs, isRunning: false } : t)
-		);
-	};
-
-	const removeTimer = (timerId: string) => {
-		setActiveTimers(prev => prev.filter(t => t.id !== timerId));
-	};
-
-	const formatTime = (ms: number) => {
-		const totalSeconds = Math.floor(ms / 1000);
-		const hours = Math.floor(totalSeconds / 3600);
-		const minutes = Math.floor((totalSeconds % 3600) / 60);
-		const seconds = totalSeconds % 60;
-
-		if (hours > 0) {
-			return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-		}
-		return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-	};
 
 	if (!familyId) {
 		return (
@@ -243,12 +154,6 @@ export function RecipeDetailPage() {
 					<ArrowLeft className="w-5 h-5" />
 				</Button>
 				<div className="flex items-center gap-2">
-					{activeTimers.length > 0 && (
-						<Button variant="outline" onClick={() => setTimerDialogOpen(true)}>
-							<Clock className="w-4 h-4 mr-2" />
-							{activeTimers.filter(t => t.isRunning).length} Active
-						</Button>
-					)}
 					<Button variant="outline" onClick={() => navigate(`/recipes/${recipeId}/edit`)}>
 						<Edit className="w-4 h-4 mr-2" />
 						Edit
@@ -307,21 +212,8 @@ export function RecipeDetailPage() {
 						<CardContent>
 							<RecipeViewer
 								content={recipe.instructions}
+								recipeId={recipe.id}
 								className="[&_.timer-mention]:cursor-pointer [&_.timer-mention:hover]:scale-105 [&_.timer-mention]:transition-transform"
-								onTimerClick={(duration, durationMs) => {
-									// Add or focus timer
-									const existingTimer = activeTimers.find(t => t.duration === duration);
-									if (!existingTimer) {
-										setActiveTimers(prev => [...prev, {
-											id: `${duration}-${Date.now()}`,
-											duration,
-											durationMs,
-											remainingMs: durationMs,
-											isRunning: false,
-										}]);
-									}
-									setTimerDialogOpen(true);
-								}}
 								onIngredientHover={(name) => setHighlightedIngredientName(name)}
 							/>
 						</CardContent>
@@ -381,48 +273,6 @@ export function RecipeDetailPage() {
 				</div>
 			</div>
 
-			{/* Timer Dialog */}
-			<Dialog open={timerDialogOpen} onOpenChange={setTimerDialogOpen}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Timers</DialogTitle>
-					</DialogHeader>
-					<div className="space-y-4">
-						{activeTimers.length === 0 ? (
-							<p className="text-center text-muted-foreground py-4">
-								Click a timer in the recipe to add it here
-							</p>
-						) : (
-							activeTimers.map((timer) => (
-								<div key={timer.id} className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
-									<div className="flex-1">
-										<p className="text-sm text-muted-foreground">{timer.duration}</p>
-										<p className={`text-3xl font-mono ${timer.remainingMs === 0 ? 'text-primary animate-pulse' : ''}`}>
-											{formatTime(timer.remainingMs)}
-										</p>
-									</div>
-									<div className="flex gap-2">
-										<Button
-											size="icon"
-											variant={timer.isRunning ? "outline" : "default"}
-											onClick={() => toggleTimer(timer.id)}
-										>
-											{timer.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-										</Button>
-										<Button
-											size="icon"
-											variant="outline"
-											onClick={() => resetTimer(timer.id)}
-										>
-											<RotateCcw className="w-4 h-4" />
-										</Button>
-									</div>
-								</div>
-							))
-						)}
-					</div>
-				</DialogContent>
-			</Dialog>
 
 			{/* Add to List Dialog */}
 			<Dialog open={addToListDialogOpen} onOpenChange={setAddToListDialogOpen}>

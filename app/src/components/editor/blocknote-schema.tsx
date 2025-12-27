@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { createReactInlineContentSpec, useBlockNoteEditor } from '@blocknote/react';
 import {
 	Tooltip,
@@ -12,6 +13,11 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { useTimerStore } from "@/lib/timer-store";
+import { LiveTimerText } from "@/components/timer/live-timer";
+import { Play, Pause, RotateCcw, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────
 // Ingredient Mention - @ingredient
@@ -79,6 +85,8 @@ export const TimerMention = createReactInlineContentSpec(
 	{
 		type: 'timerMention',
 		propSchema: {
+			id: { default: '' },
+			recipeId: { default: '' },
 			duration: { default: '' },
 			durationMs: { default: 0 },
 		},
@@ -89,43 +97,159 @@ export const TimerMention = createReactInlineContentSpec(
 			const editor = useBlockNoteEditor();
 			const isEditable = editor.isEditable;
 
-			const { duration, durationMs } = inlineContent.props;
+			// We need to cast because we added custom props that typescript might not know about in the default types immediately
+			const { duration, durationMs, id: propId, recipeId } = inlineContent.props as any;
 			const ms = durationMs;
 			const formatted = formatDuration(ms);
 
-			const badge = (
-				<button
-					type="button"
-					className="timer-mention inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 rounded-full bg-accent text-accent-foreground font-medium text-sm cursor-pointer hover:bg-accent/80 transition-colors"
-					data-timer={duration}
-					data-timer-ms={ms.toString()}
-				>
-					⏱️ {formatted}
-				</button>
-			);
-
+			// If it's editable, we just show the static badge
 			if (isEditable) {
-				return badge;
+				return (
+					<button
+						type="button"
+						className="timer-mention inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 rounded-full bg-accent text-accent-foreground font-medium text-sm cursor-pointer hover:bg-accent/80 transition-colors"
+						data-timer={duration}
+						data-timer-ms={ms.toString()}
+					>
+						⏱️ {formatted}
+					</button>
+				);
 			}
 
-			// In viewer mode, show hover card
-			// Note: The click handler for the timer is still handled by event delegation in RecipeViewer
-			// but we can add more info or actions in the hover card if needed.
+
+			const timerState = useTimerStore((state) => state.timers[propId]);
+			const { startTimer, pauseTimer, resetTimer, addTimer } = useTimerStore();
+
+			const isRunning = timerState?.status === 'running';
+			const isPaused = timerState?.status === 'paused';
+			const isCompleted = timerState?.status === 'completed';
+			const hasStarted = timerState && (timerState.status !== 'idle' || timerState.remainingMs < ms);
+
+			// Ensure timer is in store with its metadata
+			// eslint-disable-next-line react-hooks/rules-of-hooks
+			useEffect(() => {
+				if (!isEditable && propId && recipeId) {
+					addTimer(propId, duration, ms, recipeId);
+				}
+			}, [addTimer, duration, isEditable, ms, propId, recipeId]);
+
+			const handleClick = (e: React.MouseEvent) => {
+				e.stopPropagation();
+				e.preventDefault();
+
+				if (!timerState) {
+					addTimer(propId, duration, ms, recipeId);
+					startTimer(propId);
+				} else if (isRunning) {
+					pauseTimer(propId);
+				} else {
+					startTimer(propId);
+				}
+			};
+
+			const handleReset = (e: React.MouseEvent) => {
+				e.stopPropagation();
+				e.preventDefault();
+				resetTimer(propId);
+			};
+
+			const timerFormat = (totalMs: number) => {
+				const preciseMs = Math.max(0, totalMs);
+				const mins = Math.floor(preciseMs / 60000);
+				const secs = Math.floor((preciseMs % 60000) / 1000);
+				return `${mins}:${secs.toString().padStart(2, '0')}`;
+			};
+
+			const badge = (
+				<span
+					className={`timer-mention inline-flex items-center gap-1.5 px-2 py-0.5 mx-0.5 rounded-full font-medium text-sm cursor-pointer transition-all border
+						${isRunning ? 'bg-primary/10 text-primary border-primary animate-pulse shadow-sm' : 'bg-accent/50 text-accent-foreground border-transparent hover:bg-accent hover:border-accent-foreground/20'}
+						${isPaused ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : ''}
+						${isCompleted ? 'bg-primary text-primary-foreground border-primary animate-bounce' : ''}
+					`}
+					onClick={handleClick}
+					data-timer-id={propId}
+				>
+					{isCompleted ? '🔔' : (isRunning ? '⏳' : '⏱️')}
+					<span>
+						{hasStarted && timerState ? (
+							<LiveTimerText timer={timerState} formatter={timerFormat} />
+						) : (
+							formatted
+						)}
+						{hasStarted && !isCompleted && (
+							<span className="opacity-50 font-normal text-[10px] ml-1">
+								/ {formatted}
+							</span>
+						)}
+					</span>
+
+					{hasStarted && (
+						<div className="flex items-center gap-1 ml-1 pl-1 border-l border-current/20">
+							<button
+								onClick={handleReset}
+								className="p-0.5 hover:bg-black/10 rounded-full transition-colors"
+								title="Reset"
+							>
+								<RotateCcw className="w-3 h-3" />
+							</button>
+						</div>
+					)}
+				</span>
+			);
+
 			return (
-				<HoverCard openDelay={200}>
-					<HoverCardTrigger asChild>
+				<HoverCard>
+					<HoverCardTrigger>
 						{badge}
 					</HoverCardTrigger>
-					<HoverCardContent className="w-60">
-						<div className="space-y-2">
-							<h4 className="text-sm font-semibold flex items-center gap-2">
-								<span className="text-xl">⏱️</span> {duration || formatted}
-							</h4>
-							<p className="text-sm text-muted-foreground">
-								Click to start this timer.
-							</p>
-							<div className="text-xs text-muted-foreground pt-2 border-t mt-2">
-								Duration: {formatDuration(ms)}
+					<HoverCardContent className="w-64 p-4 shadow-xl border-2" sideOffset={16}>
+						<div className="space-y-4">
+							<div className="flex items-center justify-between">
+								<h4 className="text-sm font-bold flex items-center gap-2">
+									<Clock className="w-4 h-4" /> {duration || "Timer"}
+								</h4>
+								<span className="text-[10px] uppercase tracking-wider font-semibold opacity-50">
+									{timerState?.status || 'idle'}
+								</span>
+							</div>
+
+							<div className={cn(
+								"text-3xl font-mono py-4 text-center rounded-lg border-2 transition-colors",
+								isRunning ? "bg-primary/5 border-primary/20 text-primary" : "bg-muted border-transparent"
+							)}>
+								{hasStarted && timerState ? (
+									<LiveTimerText timer={timerState} formatter={timerFormat} />
+								) : (
+									timerFormat(ms)
+								)}
+							</div>
+
+							<div className="flex gap-2">
+								<Button
+									className="flex-1 gap-2"
+									variant={isRunning ? "outline" : "default"}
+									onClick={handleClick}
+								>
+									{isRunning ? (
+										<><Pause className="w-4 h-4" /> Pause</>
+									) : (
+										<><Play className="w-4 h-4" /> {hasStarted ? 'Resume' : 'Start'}</>
+									)}
+								</Button>
+								<Button
+									variant="secondary"
+									size="icon"
+									onClick={handleReset}
+									title="Reset"
+								>
+									<RotateCcw className="w-4 h-4" />
+								</Button>
+							</div>
+
+							<div className="text-[10px] text-muted-foreground flex justify-between pt-2 border-t">
+								<span>Target: {formatted}</span>
+								<span>ID: {propId?.split('-').pop()}</span>
 							</div>
 						</div>
 					</HoverCardContent>

@@ -24,7 +24,7 @@ const schema = BlockNoteSchema.create({
 interface RecipeViewerProps {
 	content: string; // JSON string of BlockNote blocks
 	className?: string;
-	onTimerClick?: (duration: string, durationMs: number) => void;
+	recipeId: string;
 	onIngredientHover?: (name: string | null) => void;
 }
 
@@ -32,7 +32,7 @@ interface RecipeViewerProps {
  * Read-only viewer for BlockNote recipe content.
  * Renders the BlockNote JSON with interactive timers.
  */
-export function RecipeViewer({ content, className, onTimerClick, onIngredientHover }: RecipeViewerProps) {
+export function RecipeViewer({ content, className, recipeId, onIngredientHover }: RecipeViewerProps) {
 	// Parse the content
 	const initialContent = useMemo(() => {
 		if (!content) return undefined;
@@ -40,6 +40,26 @@ export function RecipeViewer({ content, className, onTimerClick, onIngredientHov
 		try {
 			const parsed = JSON.parse(content);
 			if (Array.isArray(parsed)) {
+				// Patch timers with deterministic IDs for persistence
+				let timerIndex = 0;
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				const traverse = (node: any) => {
+					if (node.type === 'timerMention') {
+						if (!node.props) node.props = {};
+						// Assign a stable ID based on recipe and index
+						node.props.id = `${recipeId}-timer-${timerIndex++}`;
+						node.props.recipeId = recipeId;
+					}
+
+					if (node.children && Array.isArray(node.children)) {
+						node.children.forEach(traverse);
+					}
+					if (node.content && Array.isArray(node.content)) {
+						node.content.forEach(traverse);
+					}
+				};
+
+				parsed.forEach(traverse);
 				return parsed;
 			}
 		} catch {
@@ -48,25 +68,12 @@ export function RecipeViewer({ content, className, onTimerClick, onIngredientHov
 		}
 
 		return undefined;
-	}, [content]);
+	}, [content, recipeId]);
 
 	const editor = useCreateBlockNote({
 		schema,
 		initialContent,
 	});
-
-	// Handle clicks on timer mentions
-	const handleClick = (e: React.MouseEvent) => {
-		const target = e.target as HTMLElement;
-		const timerButton = target.closest('.timer-mention') as HTMLElement;
-		if (timerButton && onTimerClick) {
-			const duration = timerButton.dataset.timer;
-			const durationMs = parseInt(timerButton.dataset.timerMs || '60000');
-			if (duration) {
-				onTimerClick(duration, durationMs);
-			}
-		}
-	};
 
 	// Handle hover for ingredients highlighting
 	const handleMouseOver = (e: React.MouseEvent) => {
@@ -110,7 +117,6 @@ export function RecipeViewer({ content, className, onTimerClick, onIngredientHov
 	return (
 		<div
 			className={className}
-			onClick={handleClick}
 			onMouseOver={handleMouseOver}
 			onMouseOut={handleMouseOut}
 		>
