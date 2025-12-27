@@ -164,18 +164,25 @@ recipesRouter.post('/', zValidator('json', createRecipeSchema), async (c) => {
 
 	// Create ingredient groups and build ID mapping
 	const groupIdMap = new Map<string, string>();
+
 	if (groups.length > 0) {
-		for (let i = 0; i < groups.length; i++) {
-			const group = groups[i];
-			const [createdGroup] = await db.insert(ingredientGroups).values({
+		// Use batch insert for better performance and reliability
+		const createdGroups = await db.insert(ingredientGroups).values(
+			groups.map((group, i) => ({
 				recipeId: recipe.id,
 				name: group.name,
 				sortOrder: group.sortOrder ?? i,
-			}).returning();
-			if (group.id) {
-				groupIdMap.set(group.id, createdGroup.id);
+			}))
+		).returning();
+
+		// Map original IDs to new DB IDs
+		// Postgres returning() preserves order of values()
+		createdGroups.forEach((createdGroup, i) => {
+			const originalGroup = groups[i];
+			if (originalGroup && originalGroup.id) {
+				groupIdMap.set(originalGroup.id, createdGroup.id);
 			}
-		}
+		});
 	}
 
 	// Create ingredients with group references

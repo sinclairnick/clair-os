@@ -16,6 +16,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as readline from "readline";
+import { randomUUID } from "crypto";
 
 // Configuration
 const DEFAULT_API_URL = "http://localhost:3001/api";
@@ -31,10 +32,12 @@ interface ParsedRecipe {
 	instructions: string;
 	tags: string[];
 	imageFilename?: string;
+	ingredientGroups?: { id: string; name: string; sortOrder: number }[];
 	ingredients: {
 		name: string;
 		quantity: number;
 		unit: string;
+		groupId?: string | null;
 	}[];
 }
 
@@ -106,7 +109,7 @@ function cleanString(str: string): string {
 		.trim();
 }
 
-// Parse the Grossr export format
+// Parse the Grossr export format (Old text format)
 function parseGrossrFormat(text: string): ParsedRecipe {
 	const recipe: ParsedRecipe = {
 		title: "",
@@ -120,10 +123,14 @@ function parseGrossrFormat(text: string): ParsedRecipe {
 	const lines = text.split("\n");
 	let currentSection = "header";
 	const instructionLines: string[] = [];
-	const ingredientLines: string[] = [];
+	// Track current group during parsing
+	let currentGroupId: string | null = null;
+	recipe.ingredientGroups = [];
+	const ingredientsWithGroups: { text: string; groupId: string | null }[] = [];
 
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i].trim();
+		if (!line) continue;
 
 		// Detect section markers
 		if (line === "===DETAILS===") {
@@ -141,6 +148,8 @@ function parseGrossrFormat(text: string): ParsedRecipe {
 
 		// Parse based on section
 		const cleanedLine = cleanString(line);
+		if (!cleanedLine) continue;
+
 		if (currentSection === "header") {
 			if (i === 0 && cleanedLine) {
 				recipe.title = cleanedLine;
@@ -155,7 +164,6 @@ function parseGrossrFormat(text: string): ParsedRecipe {
 				const servingsMatch = yieldText.match(/(\d+)/);
 				if (servingsMatch) recipe.servings = parseInt(servingsMatch[1], 10);
 
-				// Only set yield if it's not just describing servings
 				if (!yieldText.toLowerCase().includes("serving")) {
 					recipe.yield = yieldText;
 				}
@@ -169,7 +177,6 @@ function parseGrossrFormat(text: string): ParsedRecipe {
 				recipe.imageFilename = cleanedLine.replace("Image:", "").trim();
 			}
 		} else if (currentSection === "steps") {
-			// Steps are formatted as "1. Title" or just "1."
 			const stepMatch = cleanedLine.match(/^(\d+)\.\s*(.*)$/);
 			if (stepMatch) {
 				const num = stepMatch[1];
@@ -183,22 +190,35 @@ function parseGrossrFormat(text: string): ParsedRecipe {
 				instructionLines.push(cleanedLine);
 			}
 		} else if (currentSection === "ingredients") {
-			if (cleanedLine && /[\d.]/.test(cleanedLine.charAt(0))) {
-				ingredientLines.push(cleanedLine);
+			// Detect group header: "[Dough]" or "For the sauce:" or just "Sauce" (if doesn't start with digit)
+			const isHeader = /^\[.+\]$/.test(cleanedLine) ||
+				(cleanedLine.endsWith(':') && !/[\d]/.test(cleanedLine)) ||
+				(!/[\d]/.test(cleanedLine.charAt(0)) && cleanedLine.length < 40 && !cleanedLine.includes('-'));
+
+			if (isHeader) {
+				const groupName = cleanedLine.replace(/^\[(.+)\]$/, '$1').replace(/:$/, '').trim();
+				currentGroupId = randomUUID();
+				recipe.ingredientGroups.push({
+					id: currentGroupId,
+					name: groupName,
+					sortOrder: recipe.ingredientGroups.length
+				});
+			} else if (/[\d.]/.test(cleanedLine.charAt(0))) {
+				ingredientsWithGroups.push({ text: cleanedLine, groupId: currentGroupId });
 			}
 		}
 	}
 
-	// Parse ingredients (format: "0.5 Cup - Ingredient name, Notes")
+	// Parse ingredients
 	const seenIngredients = new Set<string>();
-	recipe.ingredients = ingredientLines
-		.filter((line) => {
-			// Remove duplicates (the export seems to double ingredients)
-			if (seenIngredients.has(line)) return false;
-			seenIngredients.add(line);
+	recipe.ingredients = ingredientsWithGroups
+		.filter((item) => {
+			if (seenIngredients.has(item.text)) return false;
+			seenIngredients.add(item.text);
 			return true;
 		})
-		.map((line) => {
+		.map((item) => {
+			const line = item.text;
 			const match = line.match(/^([\d.]+)\s+(\w+)\s+-\s+(.+)$/);
 			if (match) {
 				const [, qty, unit, nameWithNotes] = match;
@@ -207,9 +227,10 @@ function parseGrossrFormat(text: string): ParsedRecipe {
 					quantity: parseFloat(qty) || 1,
 					unit: unit || "",
 					name: name || line,
+					groupId: item.groupId
 				};
 			}
-			return { quantity: 1, unit: "", name: line };
+			return { quantity: 1, unit: "", name: line, groupId: item.groupId };
 		});
 
 	// Format instructions as JSON for the BlockNote editor (array of blocks)
@@ -248,6 +269,7 @@ async function uploadImage(
 		const mimeType = getMimeType(filePath);
 
 		const formData = new FormData();
+		// @ts-ignore - FormData expects a Blob which works in Node's fetch
 		formData.append("file", new Blob([fileBuffer], { type: mimeType }), fileName);
 
 		const response = await fetch(`${apiUrl}/storage/upload`, {
@@ -260,6 +282,8 @@ async function uploadImage(
 
 		if (!response.ok) {
 			console.error(`Failed to upload image ${fileName}: ${response.statusText}`);
+			const err = await response.text();
+			console.error(err);
 			return null;
 		}
 
@@ -298,17 +322,33 @@ async function createRecipe(
 			description: recipe.description || undefined,
 			servings: recipe.servings,
 			yield: recipe.yield,
-			prepTimeMinutes: recipe.prepTimeMinutes,
-			cookTimeMinutes: recipe.cookTimeMinutes,
+			prepTimeMinutes: recipe.prepTimeMinutes ?? 0,
+			cookTimeMinutes: recipe.cookTimeMinutes ?? 0,
 			instructions: recipe.instructions,
 			tags: recipe.tags,
 			imageUrl,
-			ingredients: recipe.ingredients.map((ing) => ({
-				name: ing.name,
-				quantity: ing.quantity,
-				unit: ing.unit,
+			ingredientGroups: (recipe.ingredientGroups || []).map((g: any, i: number) => ({
+				id: g.id || randomUUID(),
+				name: g.name,
+				sortOrder: g.sortOrder ?? i,
 			})),
+			ingredients: (recipe.ingredients || []).map((ing: any, index: number) => {
+				const name = ing.name.trim();
+				// @ts-ignore - 'treatment' might be present in JSON but not in interface
+				const treatment = ing.treatment?.trim();
+				const fullName = treatment ? `${name} (${treatment})` : name;
+
+				return {
+					name: fullName,
+					quantity: ing.quantity,
+					unit: ing.unit,
+					groupId: ing.groupId || null,
+					sortOrder: index,
+				};
+			}),
 		};
+
+		// console.log(`Sending recipe: ${payload.title} with ${payload.ingredientGroups?.length} groups and ${payload.ingredients.length} ingredients`);
 
 		const response = await fetch(`${apiUrl}/recipes`, {
 			method: "POST",
@@ -343,25 +383,31 @@ async function processRecipeFolder(
 	const folderName = path.basename(recipeFolder);
 
 	try {
-		// Find the .txt file
-		const files = fs.readdirSync(recipeFolder);
-		const txtFile = files.find((f) => f.endsWith(".txt"));
+		// Prefer recipe.json if it exists
+		const jsonPath = path.join(recipeFolder, "recipe.json");
+		let recipe: ParsedRecipe;
 
-		if (!txtFile) {
-			return { success: false, recipeName: folderName, error: "No .txt file found" };
+		console.log(jsonPath)
+
+		if (fs.existsSync(jsonPath)) {
+			recipe = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+		} else {
+			// Fallback to .txt format
+			const files = fs.readdirSync(recipeFolder);
+			const txtFile = files.find((f) => f.endsWith(".txt"));
+
+			if (!txtFile) {
+				return { success: false, recipeName: folderName, error: "No recipe.json or .txt file found" };
+			}
+
+			const txtPath = path.join(recipeFolder, txtFile);
+			const buffer = fs.readFileSync(txtPath);
+			let content = buffer.toString("utf8");
+			if (content.includes("\uFFFD")) {
+				content = buffer.toString("latin1");
+			}
+			recipe = parseGrossrFormat(content);
 		}
-
-		// Read and parse the recipe
-		const txtPath = path.join(recipeFolder, txtFile);
-		const buffer = fs.readFileSync(txtPath);
-
-		// Detct encoding (heuristic: try UTF-8, fallback to Latin-1 if replacement characters appear)
-		let content = buffer.toString("utf8");
-		if (content.includes("\uFFFD")) {
-			content = buffer.toString("latin1");
-		}
-
-		const recipe = parseGrossrFormat(content);
 
 		if (!recipe.title) {
 			return { success: false, recipeName: folderName, error: "Could not parse recipe title" };
@@ -476,17 +522,15 @@ async function main() {
 		const folder = recipeFolders[i];
 		const progress = `[${i + 1}/${recipeFolders.length}]`;
 
-		process.stdout.write(`${progress} Processing ${path.basename(folder)}... `);
-
 		const result = await processRecipeFolder(folder, familyId, apiUrl, cookie);
 		results.push(result);
 
 		if (result.success) {
 			successCount++;
-			console.log("✅");
+			process.stdout.write("✅\n");
 		} else {
 			failCount++;
-			console.log(`❌ ${result.error}`);
+			process.stdout.write(`❌ ${result.error}\n`);
 		}
 
 		// Small delay to avoid overwhelming the API

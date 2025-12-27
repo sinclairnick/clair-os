@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray, Controller, useWatch, FormProvider, useFormContext } from "react-hook-form";
@@ -59,38 +59,51 @@ type RecipeFormData = z.infer<typeof recipeFormSchema>;
 
 interface IngredientRowProps {
 	index: number;
-	ingredient: any;
 	onRemove: (index: number) => void;
 	ingredientIdToFocus: string | null;
 	onFocusHandled: () => void;
 }
 
-function IngredientRow({ index, ingredient, onRemove, ingredientIdToFocus, onFocusHandled }: IngredientRowProps) {
-	const { register } = useFormContext();
+function IngredientRow({ index, onRemove, ingredientIdToFocus, onFocusHandled }: IngredientRowProps) {
+	const { control } = useFormContext();
 	const ref = useRef<HTMLDivElement>(null);
 	const dragHandleRef = useRef<HTMLDivElement>(null);
 	const [isDraggedOver, setIsDraggedOver] = useState(false);
 	const [isDragging, setIsDragging] = useState(false);
 
-	const ingredientId = ingredient.id;
-	const groupId = ingredient.groupId;
+	// Targeted watch for this specific ingredient to avoid top-level re-renders
+	// and ensure we have the data for DND logic
+	const ingredient = useWatch({
+		control,
+		name: `ingredients.${index}`,
+	});
 
 	useEffect(() => {
 		const el = ref.current;
 		const dragHandle = dragHandleRef.current;
-		if (!el || !dragHandle) return;
+		if (!el || !dragHandle || !ingredient) return;
 
 		const d = draggable({
 			element: el,
 			dragHandle: dragHandle,
-			getInitialData: () => ({ type: "ingredient", index, groupId, id: ingredientId }),
+			getInitialData: () => ({
+				type: "ingredient",
+				index,
+				groupId: ingredient.groupId,
+				id: ingredient.id
+			}),
 			onDragStart: () => setIsDragging(true),
 			onDrop: () => setIsDragging(false),
 		});
 
 		const dt = dropTargetForElements({
 			element: el,
-			getData: () => ({ type: "ingredient", index, groupId, id: ingredientId }),
+			getData: () => ({
+				type: "ingredient",
+				index,
+				groupId: ingredient.groupId,
+				id: ingredient.id
+			}),
 			onDragEnter: () => setIsDraggedOver(true),
 			onDragLeave: () => setIsDraggedOver(false),
 			onDrop: () => setIsDraggedOver(false),
@@ -100,7 +113,9 @@ function IngredientRow({ index, ingredient, onRemove, ingredientIdToFocus, onFoc
 			d();
 			dt();
 		};
-	}, [index, groupId, ingredientId]);
+	}, [index, ingredient?.groupId, ingredient?.id]);
+
+	if (!ingredient) return null;
 
 	return (
 		<div
@@ -117,28 +132,46 @@ function IngredientRow({ index, ingredient, onRemove, ingredientIdToFocus, onFoc
 			>
 				<GripVertical className="w-4 h-4" />
 			</div>
-			<Input
-				placeholder="Qty"
-				{...register(`ingredients.${index}.quantity`)}
-				ref={(e) => {
-					register(`ingredients.${index}.quantity`).ref(e);
-					if (e && ingredientIdToFocus && ingredient.id === ingredientIdToFocus) {
-						e.focus();
-						onFocusHandled();
-					}
-				}}
-				className="w-16 h-8"
+			<Controller
+				name={`ingredients.${index}.quantity`}
+				control={control}
+				render={({ field }) => (
+					<Input
+						{...field}
+						placeholder="Qty"
+						ref={(e) => {
+							field.ref(e);
+							if (e && ingredientIdToFocus && ingredient.id === ingredientIdToFocus) {
+								e.focus();
+								onFocusHandled();
+							}
+						}}
+						className="w-16 h-8"
+					/>
+				)}
 			/>
-			<Input
-				placeholder="Unit"
-				{...register(`ingredients.${index}.unit`)}
-				list="unit-suggestions"
-				className="w-20 h-8"
+			<Controller
+				name={`ingredients.${index}.unit`}
+				control={control}
+				render={({ field }) => (
+					<Input
+						{...field}
+						placeholder="Unit"
+						list="unit-suggestions"
+						className="w-20 h-8"
+					/>
+				)}
 			/>
-			<Input
-				placeholder="Ingredient name"
-				{...register(`ingredients.${index}.name`)}
-				className="flex-1 h-8"
+			<Controller
+				name={`ingredients.${index}.name`}
+				control={control}
+				render={({ field }) => (
+					<Input
+						{...field}
+						placeholder="Ingredient name"
+						className="flex-1 h-8"
+					/>
+				)}
 			/>
 			<Button
 				type="button"
@@ -154,11 +187,8 @@ function IngredientRow({ index, ingredient, onRemove, ingredientIdToFocus, onFoc
 }
 
 interface IngredientGroupSectionProps {
-	group: any;
 	groupIndex: number;
-	actualGroupId: string | null;
 	ingredientFields: any[];
-	ingredients: any[];
 	handleAddIngredient: (groupId: string | null) => void;
 	handleRemoveGroup: (index: number) => void;
 	toggleGroupExpanded: (index: number) => void;
@@ -168,11 +198,8 @@ interface IngredientGroupSectionProps {
 }
 
 function IngredientGroupSection({
-	group,
 	groupIndex,
-	actualGroupId,
 	ingredientFields,
-	ingredients,
 	handleAddIngredient,
 	handleRemoveGroup,
 	toggleGroupExpanded,
@@ -180,16 +207,30 @@ function IngredientGroupSection({
 	onFocusHandled,
 	removeIngredient,
 }: IngredientGroupSectionProps) {
-	const { register } = useFormContext();
+	const { register, control } = useFormContext();
 	const ref = useRef<HTMLDivElement>(null);
 	const dragHandleRef = useRef<HTMLDivElement>(null);
 	const [isDraggedOver, setIsDraggedOver] = useState(false);
 	const [isDragging, setIsDragging] = useState(false);
 
+	// Watch this specific group's data for stability
+	const group = useWatch({
+		control,
+		name: `ingredientGroups.${groupIndex}`,
+	});
+
+	// Watch all ingredients for filtering - but safely
+	const ingredients = useWatch({
+		control,
+		name: "ingredients",
+	}) || [];
+
+	const actualGroupId = group?.id;
+
 	useEffect(() => {
 		const el = ref.current;
 		const dragHandle = dragHandleRef.current;
-		if (!el || !dragHandle) return;
+		if (!el || !dragHandle || !group) return;
 
 		const d = draggable({
 			element: el,
@@ -211,9 +252,16 @@ function IngredientGroupSection({
 			d();
 			dt();
 		};
-	}, [groupIndex, group.id, actualGroupId]);
+	}, [groupIndex, group?.id, actualGroupId]);
+
+	if (!group) return null;
 
 	const isExpanded = group.isExpanded ?? true;
+
+	// Safely get matching ingredients
+	const groupIngredients = ingredientFields
+		.map((field, index) => ({ field, index }))
+		.filter(({ index }) => ingredients[index]?.groupId === actualGroupId);
 
 	return (
 		<div
@@ -267,25 +315,20 @@ function IngredientGroupSection({
 			</div>
 
 			<div className={cn("p-2 space-y-1", { hidden: !isExpanded })}>
-				{ingredientFields.filter((_, i) => ingredients[i]?.groupId === actualGroupId).length === 0 ? (
+				{groupIngredients.length === 0 ? (
 					<p className="text-xs text-muted-foreground text-center py-4 border-2 border-dashed border-muted rounded-md mb-1">
 						Drop ingredients here
 					</p>
 				) : (
-					ingredientFields.map((field, index) => {
-						const ing = ingredients[index];
-						if (ing?.groupId !== actualGroupId) return null;
-						return (
-							<IngredientRow
-								key={field.id}
-								index={index}
-								ingredient={ing}
-								onRemove={removeIngredient}
-								ingredientIdToFocus={ingredientIdToFocus}
-								onFocusHandled={onFocusHandled}
-							/>
-						);
-					})
+					groupIngredients.map(({ field, index }) => (
+						<IngredientRow
+							key={field.id}
+							index={index}
+							onRemove={removeIngredient}
+							ingredientIdToFocus={ingredientIdToFocus}
+							onFocusHandled={onFocusHandled}
+						/>
+					))
 				)}
 			</div>
 		</div>
@@ -329,12 +372,8 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 		name: "ingredientGroups",
 	});
 
-	// Use useWatch for reactive form values
-	const tags = useWatch({ control: form.control, name: "tags" }) || [];
-	const ingredients = useWatch({ control: form.control, name: "ingredients" }) || [];
-	const ingredientGroups = useWatch({ control: form.control, name: "ingredientGroups" }) || [];
-	const instructions = useWatch({ control: form.control, name: "instructions" }) || "";
-	const title = useWatch({ control: form.control, name: "title" }) || "";
+	// No top-level useWatch calls here anymore.
+	// Each part of the form watches only what it needs.
 
 	// Fetch existing recipe if editing
 	const { data: recipe, isLoading } = useQuery({
@@ -490,13 +529,15 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 	});
 
 	const handleAddTag = (tag: string) => {
-		if (tag.trim() && !tags.includes(tag.trim())) {
-			form.setValue("tags", [...tags, tag.trim()]);
+		const currentTags = form.getValues("tags") || [];
+		if (tag.trim() && !currentTags.includes(tag.trim())) {
+			form.setValue("tags", [...currentTags, tag.trim()]);
 		}
 	};
 
 	const handleRemoveTag = (tag: string) => {
-		form.setValue("tags", tags.filter((t) => t !== tag));
+		const currentTags = form.getValues("tags") || [];
+		form.setValue("tags", currentTags.filter((t) => t !== tag));
 	};
 
 	const handleAddIngredient = (groupId: string | null = null) => {
@@ -514,14 +555,17 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 	};
 
 	const toggleGroupExpanded = (groupIndex: number) => {
-		const isExpanded = ingredientGroups?.[groupIndex]?.isExpanded ?? true;
+		const currentGroups = form.getValues("ingredientGroups") || [];
+		const isExpanded = currentGroups[groupIndex]?.isExpanded ?? true;
 		form.setValue(`ingredientGroups.${groupIndex}.isExpanded`, !isExpanded);
 	};
 
 	const handleRemoveGroup = (groupIndex: number) => {
-		const groupId = ingredientGroups?.[groupIndex]?.id;
+		const currentGroups = form.getValues("ingredientGroups") || [];
+		const currentIngredients = form.getValues("ingredients") || [];
+		const groupId = currentGroups[groupIndex]?.id;
 		// Move all ingredients in this group to ungrouped
-		ingredients?.forEach((ing, index) => {
+		currentIngredients.forEach((ing: any, index: number) => {
 			if (ing.groupId === groupId) {
 				form.setValue(`ingredients.${index}.groupId`, null);
 			}
@@ -532,7 +576,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 	// Handle ingredients extracted from editor mentions
 	const handleIngredientsChange = (extractedIngredients: IngredientMention[]) => {
 		setIngredientIdToFocus(null);
-		if (!ingredients) return;
+		const currentIngredients = form.getValues("ingredients") || [];
 
 		// Track what's being added in this cycle to prevent duplicates if useWatch hasn't updated yet
 		const addedInThisCycle = new Set<string>();
@@ -542,8 +586,8 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 			if (!normalizedName) return;
 
 			// Check if we already have this ingredient in the form OR added in this cycle
-			const alreadyExists = ingredients.some(
-				(ing) => (ing.id && mentioned.id && ing.id === mentioned.id) ||
+			const alreadyExists = currentIngredients.some(
+				(ing: any) => (ing.id && mentioned.id && ing.id === mentioned.id) ||
 					(ing.name.trim().toLowerCase() === normalizedName)
 			) || addedInThisCycle.has(normalizedName);
 
@@ -563,9 +607,6 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 	const onSubmit = form.handleSubmit((data) => {
 		saveMutation.mutate(data);
 	});
-
-	// Check if form can be saved - need title at minimum
-	const canSave = title.trim().length > 0;
 
 	if (!familyId) {
 		return (
@@ -616,14 +657,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 								Delete
 							</Button>
 						)}
-						<Button type="submit" disabled={saveMutation.isPending || !canSave}>
-							{saveMutation.isPending ? (
-								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-							) : (
-								<Save className="w-4 h-4 mr-2" />
-							)}
-							Save Recipe
-						</Button>
+						<SaveButton isNew={isNew} isPending={saveMutation.isPending} />
 					</div>
 				</div>
 
@@ -657,77 +691,17 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 
 						{/* Ingredients */}
 						<Card>
-							<CardHeader className="pb-3">
-								<div className="flex items-center justify-between">
-									<CardTitle>Ingredients</CardTitle>
-									<div className="flex gap-2">
-										<Button type="button" size="sm" variant="outline" onClick={handleAddGroup}>
-											<FolderPlus className="w-4 h-4 mr-1" />
-											Add Section
-										</Button>
-										<Button type="button" size="sm" variant="secondary" onClick={() => handleAddIngredient()}>
-											<Plus className="w-4 h-4 mr-1" />
-											Add
-										</Button>
-									</div>
-								</div>
-							</CardHeader>
-							<CardContent className="space-y-4">
-								{/* Ingredient Groups */}
-								{groupFields.map((group, groupIndex) => {
-									const actualGroupId = ingredientGroups[groupIndex]?.id;
-									return (
-										<IngredientGroupSection
-											key={group.id}
-											group={group}
-											groupIndex={groupIndex}
-											actualGroupId={actualGroupId}
-											ingredientFields={ingredientFields}
-											ingredients={ingredients}
-											handleAddIngredient={handleAddIngredient}
-											handleRemoveGroup={handleRemoveGroup}
-											toggleGroupExpanded={toggleGroupExpanded}
-											ingredientIdToFocus={ingredientIdToFocus}
-											onFocusHandled={() => setIngredientIdToFocus(null)}
-											removeIngredient={removeIngredient}
-										/>
-									);
-								})}
-
-								{/* Ungrouped Ingredients */}
-								{(() => {
-									const ungroupedIngredients = ingredientFields.filter((_, i) => !ingredients[i]?.groupId);
-									if (ungroupedIngredients.length === 0 && groupFields.length > 0) return null;
-
-									return (
-										<div className="space-y-2">
-											{groupFields.length > 0 && (
-												<p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Ungrouped</p>
-											)}
-											{ingredientFields.length === 0 ? (
-												<p className="text-sm text-muted-foreground text-center py-4">
-													No ingredients added yet. Click "Add" or use @mentions in instructions.
-												</p>
-											) : (
-												ingredientFields.map((field, index) => {
-													const ing = ingredients[index];
-													if (ing?.groupId) return null;
-													return (
-														<IngredientRow
-															key={field.id}
-															index={index}
-															ingredient={ing}
-															onRemove={removeIngredient}
-															ingredientIdToFocus={ingredientIdToFocus}
-															onFocusHandled={() => setIngredientIdToFocus(null)}
-														/>
-													);
-												})
-											)}
-										</div>
-									);
-								})()}
-							</CardContent>
+							<IngredientsList
+								groupFields={groupFields}
+								ingredientFields={ingredientFields}
+								ingredientIdToFocus={ingredientIdToFocus}
+								setIngredientIdToFocus={setIngredientIdToFocus}
+								handleAddIngredient={handleAddIngredient}
+								handleAddGroup={handleAddGroup}
+								handleRemoveGroup={handleRemoveGroup}
+								toggleGroupExpanded={toggleGroupExpanded}
+								removeIngredient={removeIngredient}
+							/>
 						</Card>
 
 						{/* Instructions */}
@@ -739,23 +713,11 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 									<kbd className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono ml-1">#</kbd> for timers (e.g. #5 minutes)
 								</p>
 							</CardHeader>
-							<CardContent>
-								<div className="border border-border rounded-lg overflow-hidden">
-									<RecipeEditor
-										key={editorKey}
-										ref={editorRef}
-										content={instructions}
-										onChange={(html) => form.setValue("instructions", html)}
-										onIngredientsChange={handleIngredientsChange}
-										existingIngredients={(ingredients ?? []).filter((i, idx, arr) => arr.findIndex(x => x.name.trim().toLowerCase() === i.name.trim().toLowerCase()) === idx).map((i) => ({
-											id: i.id,
-											name: i.name,
-											quantity: i.quantity ? parseFloat(i.quantity) : undefined,
-											unit: i.unit,
-										}))}
-									/>
-								</div>
-							</CardContent>
+							<InstructionsSection
+								editorKey={editorKey}
+								editorRef={editorRef}
+								handleIngredientsChange={handleIngredientsChange}
+							/>
 						</Card>
 					</div>
 
@@ -870,18 +832,28 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 									</Button>
 								</div>
 								<div className="flex flex-wrap gap-2">
-									{tags.length === 0 ? (
-										<p className="text-sm text-muted-foreground">No tags</p>
-									) : (
-										tags.map((tag) => (
-											<Badge key={tag} variant="secondary" className="gap-1 pr-1">
-												{tag}
-												<button type="button" onClick={() => handleRemoveTag(tag)} className="ml-1 hover:text-destructive rounded-full">
-													<X className="w-3 h-3" />
-												</button>
-											</Badge>
-										))
-									)}
+									<Controller
+										name="tags"
+										control={form.control}
+										render={({ field }) => {
+											const tags = (field.value as string[]) || [];
+											if (tags.length === 0) {
+												return <p className="text-sm text-muted-foreground">No tags</p>;
+											}
+											return (
+												<>
+													{tags.map((tag) => (
+														<Badge key={tag} variant="secondary" className="gap-1 pr-1">
+															{tag}
+															<button type="button" onClick={() => handleRemoveTag(tag)} className="ml-1 hover:text-destructive rounded-full">
+																<X className="w-3 h-3" />
+															</button>
+														</Badge>
+													))}
+												</>
+											);
+										}}
+									/>
 								</div>
 							</CardContent>
 						</Card>
@@ -964,5 +936,155 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 				</div>
 			</form >
 		</FormProvider>
+	);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sub-components
+// ─────────────────────────────────────────────────────────────
+
+function SaveButton({ isNew, isPending }: { isNew: boolean; isPending: boolean }) {
+	const { control } = useFormContext();
+	const title = useWatch({ control, name: "title" }) || "";
+	const canSave = title.trim().length > 0;
+
+	return (
+		<Button type="submit" disabled={isPending || !canSave}>
+			{isPending ? (
+				<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+			) : (
+				<Save className="w-4 h-4 mr-2" />
+			)}
+			{isNew ? "Create Recipe" : "Save Recipe"}
+		</Button>
+	);
+}
+
+function IngredientsList({
+	groupFields,
+	ingredientFields,
+	ingredientIdToFocus,
+	setIngredientIdToFocus,
+	handleAddIngredient,
+	handleAddGroup,
+	handleRemoveGroup,
+	toggleGroupExpanded,
+	removeIngredient,
+}: any) {
+	const { control } = useFormContext();
+	const ingredients = useWatch({ control, name: "ingredients" }) || [];
+
+	return (
+		<>
+			<CardHeader className="pb-3">
+				<div className="flex items-center justify-between">
+					<CardTitle>Ingredients</CardTitle>
+					<div className="flex gap-2">
+						<Button type="button" size="sm" variant="outline" onClick={handleAddGroup}>
+							<FolderPlus className="w-4 h-4 mr-1" />
+							Add Section
+						</Button>
+						<Button type="button" size="sm" variant="secondary" onClick={() => handleAddIngredient()}>
+							<Plus className="w-4 h-4 mr-1" />
+							Add
+						</Button>
+					</div>
+				</div>
+			</CardHeader>
+			<CardContent className="space-y-4">
+				{/* Ingredient Groups */}
+				{groupFields.map((field: any, groupIndex: number) => {
+					return (
+						<IngredientGroupSection
+							key={field.id}
+							groupIndex={groupIndex}
+							ingredientFields={ingredientFields}
+							handleAddIngredient={handleAddIngredient}
+							handleRemoveGroup={handleRemoveGroup}
+							toggleGroupExpanded={toggleGroupExpanded}
+							ingredientIdToFocus={ingredientIdToFocus}
+							onFocusHandled={() => setIngredientIdToFocus(null)}
+							removeIngredient={removeIngredient}
+						/>
+					);
+				})}
+
+				{/* Ungrouped Ingredients */}
+				{(() => {
+					const ungroupedIngredients = ingredientFields
+						.map((field: any, index: number) => ({ field, index }))
+						.filter(({ index }: any) => !ingredients[index]?.groupId);
+
+					if (ungroupedIngredients.length === 0 && groupFields.length > 0) return null;
+
+					return (
+						<div className="space-y-2">
+							{groupFields.length > 0 && (
+								<p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Ungrouped</p>
+							)}
+							{ingredientFields.length === 0 ? (
+								<p className="text-sm text-muted-foreground text-center py-4">
+									No ingredients added yet. Click "Add" or use @mentions in instructions.
+								</p>
+							) : (
+								ungroupedIngredients.map(({ field, index }: any) => (
+									<IngredientRow
+										key={field.id}
+										index={index}
+										onRemove={removeIngredient}
+										ingredientIdToFocus={ingredientIdToFocus}
+										onFocusHandled={() => setIngredientIdToFocus(null)}
+									/>
+								))
+							)}
+						</div>
+					);
+				})()}
+			</CardContent>
+		</>
+	);
+}
+
+function InstructionsSection({ editorKey, editorRef, handleIngredientsChange }: any) {
+	const { control } = useFormContext();
+	const ingredients = useWatch({ control, name: "ingredients" }) || [];
+
+	// Memoize existing ingredients for the editor to prevent unnecessary re-renders of the editor itself
+	const existingIngredients = useMemo(() => {
+		const uniqueIngredients = (ingredients as any[]).reduce((acc: any[], current: any) => {
+			const normalizedName = current.name.trim().toLowerCase();
+			if (normalizedName && !acc.find(item => item.name.trim().toLowerCase() === normalizedName)) {
+				acc.push({
+					id: current.id,
+					name: current.name,
+					quantity: current.quantity ? parseFloat(current.quantity) : undefined,
+					unit: current.unit,
+				});
+			}
+			return acc;
+		}, []);
+		return uniqueIngredients;
+	}, [ingredients]);
+
+	return (
+		<CardContent>
+			<div className="border border-border rounded-lg overflow-hidden">
+				<Controller
+					name="instructions"
+					control={control}
+					render={({ field }) => (
+						<RecipeEditor
+							{...field}
+							key={editorKey}
+							ref={editorRef}
+							content={field.value}
+							onChange={field.onChange}
+							onIngredientsChange={handleIngredientsChange}
+							existingIngredients={existingIngredients}
+						/>
+					)}
+				/>
+			</div>
+		</CardContent>
 	);
 }
