@@ -10,6 +10,7 @@ import {
 	TimerMention,
 	RecipeMention,
 } from './blocknote-schema';
+import { useTheme } from '@/components/theme-provider';
 
 // Use the same schema as the editor
 const schema = BlockNoteSchema.create({
@@ -114,6 +115,8 @@ export function RecipeViewer({ content, className, recipeId, onIngredientHover }
 		);
 	}
 
+	const { resolvedTheme } = useTheme();
+
 	return (
 		<div
 			className={className}
@@ -123,7 +126,7 @@ export function RecipeViewer({ content, className, recipeId, onIngredientHover }
 			<BlockNoteView
 				editor={editor}
 				editable={false}
-				theme="light"
+				theme={resolvedTheme}
 				linkToolbar={false}
 				formattingToolbar={false}
 				sideMenu={false}

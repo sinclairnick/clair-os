@@ -164,7 +164,7 @@ export const TimerMention = createReactInlineContentSpec(
 				<span
 					className={`timer-mention inline-flex items-center gap-1.5 px-2 py-0.5 mx-0.5 rounded-full font-medium text-sm cursor-pointer transition-all border
 						${isRunning ? 'bg-primary/10 text-primary border-primary animate-pulse shadow-sm' : 'bg-accent/50 text-accent-foreground border-transparent hover:bg-accent hover:border-accent-foreground/20'}
-						${isPaused ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : ''}
+						${isPaused ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-500/50' : ''}
 						${isCompleted ? 'bg-primary text-primary-foreground border-primary animate-bounce' : ''}
 					`}
 					onClick={handleClick}
@@ -188,7 +188,7 @@ export const TimerMention = createReactInlineContentSpec(
 						<div className="flex items-center gap-1 ml-1 pl-1 border-l border-current/20">
 							<button
 								onClick={handleReset}
-								className="p-0.5 hover:bg-black/10 rounded-full transition-colors"
+								className="p-0.5 hover:bg-foreground/10 rounded-full transition-colors"
 								title="Reset"
 							>
 								<RotateCcw className="w-3 h-3" />

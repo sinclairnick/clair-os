@@ -213,3 +213,20 @@
   background: var(--accent) !important;
   color: var(--accent-foreground) !important;
 }
+
+/* Ensure suggestions menu matches theme */
+.dark .bn-suggestion-menu {
+  background-color: var(--popover) !important;
+  border-color: var(--border) !important;
+}
+
+.dark .bn-suggestion-menu-item[data-selected="true"] {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+/* Polish the editor for dark mode */
+.dark .bn-editor {
+  --bn-colors-editor-background: transparent;
+  --bn-colors-editor-text: var(--foreground);
+}

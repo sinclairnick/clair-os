@@ -11,6 +11,7 @@ import {
 	RecipeMention,
 	formatDuration,
 } from './blocknote-schema';
+import { useTheme } from '@/components/theme-provider';
 import {
 	getMentionItems,
 	getTimerItems,
@@ -219,14 +220,16 @@ export const RecipeEditor = forwardRef<RecipeEditorRef, RecipeEditorProps>(
 			[existingIngredients]
 		);
 
+		const { resolvedTheme } = useTheme();
+
 		return (
 			<div className={className}>
 				<BlockNoteView
 					editor={editor}
 					editable={editable}
 					onChange={handleChange}
-					theme="light"
-					className='[&>.bn-editor]:!bg-input/20'
+					theme={resolvedTheme}
+					className='[&>.bn-editor]:!bg-transparent'
 				>
 					{/* @ mention menu for ingredients (and future recipes) */}
 					<SuggestionMenuController
