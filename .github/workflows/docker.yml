@@ -14,7 +14,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [api, app]
+        include:
+          - service: api
+            file: ./Dockerfile.api
+            target: api
+            image: api
+            build_args: ""
+          - service: api-migrations
+            file: ./Dockerfile.api
+            target: migrations
+            image: api-migrations
+            build_args: ""
+          - service: app
+            file: ./Dockerfile.app
+            target: ""
+            image: app
+            build_args: ""
 
     steps:
       - name: Checkout repository
@@ -34,7 +49,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}/${{ matrix.service }}
+          images: ghcr.io/${{ github.repository }}/${{ matrix.image }}
           tags: |
             type=ref,event=tag
             type=sha,format=short
@@ -43,9 +58,11 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile.${{ matrix.service }}
+          file: ${{ matrix.file }}
+          target: ${{ matrix.target }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: ${{ matrix.build_args }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

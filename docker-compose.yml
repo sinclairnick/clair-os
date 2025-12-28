@@ -1,101 +1,117 @@
-services:
-  minio:
-    image: minio/minio:latest
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-clairios_admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-clairios_storage_dev}
-    volumes:
-      - minio_data:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+version: '3.10'
 
+services:
   db:
     image: postgres:16-alpine
-    restart: unless-stopped
     environment:
       POSTGRES_USER: clairios
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-clairios_dev}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: clairios
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U clairios"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
 
-  # OpenFGA migration - runs once to set up tables
+  openfga:
+    image: openfga/openfga:latest
+    command: run
+    environment:
+      OPENFGA_DATASTORE_ENGINE: postgres
+      OPENFGA_DATASTORE_URI: postgres://clairios:${DB_PASSWORD}@db:5432/clairios?sslmode=disable
+      OPENFGA_LOG_FORMAT: json
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  # Drizzle migrations job (Replicated Job)
+  migrations:
+    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api-migrations:latest
+    environment:
+      DATABASE_URL: postgres://clairios:${DB_PASSWORD}@db:5432/clairios
+    deploy:
+      mode: replicated-job
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 10
+      placement:
+        constraints:
+          - node.role == manager
+
+  # OpenFGA migrations job (Replicated Job)
   openfga-migrate:
     image: openfga/openfga:latest
     command: migrate
     environment:
       OPENFGA_DATASTORE_ENGINE: postgres
-      OPENFGA_DATASTORE_URI: postgres://clairios:${DB_PASSWORD:-clairios_dev}@db:5432/clairios?sslmode=disable
-    depends_on:
-      db:
-        condition: service_healthy
-
-  # OpenFGA authorization service
-  openfga:
-    image: openfga/openfga:latest
-    restart: unless-stopped
-    command: run
-    environment:
-      OPENFGA_DATASTORE_ENGINE: postgres
-      OPENFGA_DATASTORE_URI: postgres://clairios:${DB_PASSWORD:-clairios_dev}@db:5432/clairios?sslmode=disable
-      OPENFGA_LOG_FORMAT: json
-    ports:
-      - "8080:8080"   # HTTP API
-      - "8081:8081"   # gRPC API
-      - "3002:3000"   # Playground (mapped to 3002 to avoid conflict with app)
-    depends_on:
-      openfga-migrate:
-        condition: service_completed_successfully
+      OPENFGA_DATASTORE_URI: postgres://clairios:${DB_PASSWORD}@db:5432/clairios?sslmode=disable
+    deploy:
+      mode: replicated-job
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    restart: unless-stopped
+    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
     environment:
-      DATABASE_URL: postgres://clairios:${DB_PASSWORD:-clairios_dev}@db:5432/clairios
+      DATABASE_URL: postgres://clairios:${DB_PASSWORD}@db:5432/clairios
       PORT: 3001
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-dev_secret_change_in_production}
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3001}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
       OPENFGA_API_URL: http://openfga:8080
       MINIO_ENDPOINT: minio
-      MINIO_PUBLIC_URL: http://localhost:9000
-    depends_on:
-      db:
-        condition: service_healthy
-      openfga:
-        condition: service_started
-      minio:
-        condition: service_started
-    ports:
-      - "3001:3001"
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      rollback_config:
+        parallelism: 0
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 5s
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile.app
-    restart: unless-stopped
+    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/app:latest
     environment:
-      VITE_API_URL: ${API_URL:-http://localhost:3001}
+      VITE_API_URL: ${API_URL}
     ports:
-      - "3000:80"
-    depends_on:
-      - api
+      - target: 80
+        published: 80
+        mode: ingress
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        order: start-first
 
 volumes:
   postgres_data:

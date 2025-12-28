@@ -7,6 +7,8 @@ import { recipesRouter } from './routes/recipes.js';
 import { shoppingRouter } from './routes/shopping.js';
 import { tasksRouter } from './routes/tasks.js';
 import { familiesRouter } from './routes/families.js';
+import { db } from './db/index.js';
+import { sql } from 'drizzle-orm';
 
 // Define custom context variables
 type Variables = {
@@ -32,8 +34,24 @@ app.get('/', (c) => {
 	return c.json({ status: 'ok', name: 'ClairOS API', version: '0.1.0' });
 });
 
-app.get('/api/health', (c) => {
-	return c.json({ status: 'healthy', timestamp: new Date().toISOString() });
+app.get('/api/health', async (c) => {
+	try {
+		// Check DB connection
+		await db.execute(sql`SELECT 1`);
+		return c.json({
+			status: 'healthy',
+			database: 'connected',
+			timestamp: new Date().toISOString()
+		});
+	} catch (error) {
+		console.error('Health check failed:', error);
+		return c.json({
+			status: 'unhealthy',
+			database: 'disconnected',
+			error: error instanceof Error ? error.message : String(error),
+			timestamp: new Date().toISOString()
+		}, 503);
+	}
 });
 
 // BetterAuth routes - handles all /api/auth/* paths
