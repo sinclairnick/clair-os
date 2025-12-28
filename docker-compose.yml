@@ -36,6 +36,13 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
+    ports:
+      - target: 9000
+        published: 9000
+        mode: ingress
+      - target: 9001
+        published: 9001
+        mode: ingress
     deploy:
       replicas: 1
       restart_policy:
@@ -80,6 +87,10 @@ services:
       OPENFGA_API_URL: http://openfga:8080
       MINIO_ENDPOINT: minio
       MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
+    ports:
+      - target: 3001
+        published: 3001
+        mode: ingress
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
       interval: 10s
@@ -113,6 +124,75 @@ services:
         parallelism: 1
         order: start-first
 
+  # Portainer for visual Docker management
+  portainer:
+    image: portainer/portainer-ce:latest
+    command: -H unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    ports:
+      - target: 9000
+        published: 9443
+        mode: ingress
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+
+  # PostgreSQL backups - daily with retention
+  postgres-backup:
+    image: prodrigestivill/postgres-backup-local:latest
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: clairios
+      POSTGRES_USER: clairios
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      SCHEDULE: "@daily"
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 6
+      HEALTHCHECK_PORT: 8080
+    volumes:
+      - backup_postgres:/backups
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+
+  # Minio backups - syncs bucket daily
+  minio-backup:
+    image: minio/mc:latest
+    entrypoint: /bin/sh
+    command: >
+      -c "
+      while true; do
+        mc alias set source http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+        mc mirror --overwrite source/clairios /backups/minio;
+        echo 'Minio backup completed at' $$(date);
+        sleep 86400;
+      done
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - backup_minio:/backups
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+
 volumes:
   postgres_data:
   minio_data:
+  portainer_data:
+  backup_postgres:
+  backup_minio:
+
