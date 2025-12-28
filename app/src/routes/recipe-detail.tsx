@@ -367,20 +367,19 @@ export function RecipeDetailPage() {
 									</Button>
 									<div className="w-8 flex justify-center">
 										{scaleFactor !== 1 && (
-											<div className="flex items-center border rounded-md px-1 bg-muted/30">
-												<Button
-													size="icon"
-													variant="ghost"
-													className="h-6 w-6 text-muted-foreground hover:text-foreground"
-													onClick={() => handleScaleChange(1)}
-													title="Reset scaling"
-												>
-													<RotateCcw className="w-3 h-3" />
-												</Button>
+											<Button
+												size="icon"
+												variant="ghost"
+												className="h-6 w-6 text-muted-foreground hover:text-foreground"
+												onClick={() => handleScaleChange(1)}
+												title="Reset scaling"
+											>
+												<RotateCcw className="w-3 h-3" />
+											</Button>
 										)}
-											</div>
+									</div>
 								</div>
-								</div>
+							</div>
 						</CardHeader>
 						<CardContent>
 							<div className="space-y-3">
