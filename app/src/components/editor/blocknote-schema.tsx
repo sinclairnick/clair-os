@@ -4,7 +4,6 @@ import { createReactInlineContentSpec, useBlockNoteEditor } from '@blocknote/rea
 import {
 	Tooltip,
 	TooltipContent,
-	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
@@ -59,18 +58,16 @@ export const IngredientMention = createReactInlineContentSpec(
 
 			// In viewer mode, show tooltip with details
 			return (
-				<TooltipProvider>
-					<Tooltip delayDuration={300}>
-						<TooltipTrigger asChild>
-							{mention}
-						</TooltipTrigger>
-						<TooltipContent>
-							<p className="font-medium capitalize">
-								{quantity} {unit} {label}
-							</p>
-						</TooltipContent>
-					</Tooltip>
-				</TooltipProvider>
+				<Tooltip delay={300}>
+					<TooltipTrigger>
+						{mention}
+					</TooltipTrigger>
+					<TooltipContent>
+						<p className="font-medium capitalize">
+							{quantity} {unit} {label}
+						</p>
+					</TooltipContent>
+				</Tooltip>
 			);
 		},
 	}

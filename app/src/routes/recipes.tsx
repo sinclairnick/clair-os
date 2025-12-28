@@ -351,7 +351,7 @@ export function RecipesPage() {
 					</Popover>
 
 					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
+						<DropdownMenuTrigger>
 							<Button variant="outline">
 								<Filter className="w-4 h-4 mr-2" />
 								Tags

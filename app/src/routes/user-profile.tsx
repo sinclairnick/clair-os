@@ -114,7 +114,7 @@ export function UserProfilePage() {
 								{isAdmin ? (
 									<Select
 										value={member.role}
-										onValueChange={(role) => updateMemberMutation.mutate({ role })}
+										onValueChange={(role) => updateMemberMutation.mutate({ role: role as string })}
 									>
 										<SelectTrigger className="w-28 h-7 text-xs">
 											<SelectValue />

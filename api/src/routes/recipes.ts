@@ -77,10 +77,13 @@ recipesRouter.get('/', requireFamilyMember, async (c) => {
 
 	if (search) {
 		const searchLower = search.toLowerCase();
-		filters.push(or(
+		const searchFilter = or(
 			ilike(recipes.title, `%${searchLower}%`),
 			ilike(recipes.description, `%${searchLower}%`)
-		));
+		);
+		if (searchFilter) {
+			filters.push(searchFilter);
+		}
 	}
 
 	if (minServings) filters.push(gte(recipes.servings, Number(minServings)));

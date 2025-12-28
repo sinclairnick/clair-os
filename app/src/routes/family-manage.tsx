@@ -3,7 +3,6 @@ import { Link } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
 	Dialog,
@@ -20,9 +19,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Plus, Loader2, Copy, Trash2, UserCircle, Link as LinkIcon, Check, Users, ChevronRight } from "lucide-react";
+import { Plus, Loader2, Copy, Trash2, Link as LinkIcon, Check, Users, ChevronRight } from "lucide-react";
 import { useCurrentFamilyId, useAuth } from "@/components/auth-provider";
-import { api, type FamilyMemberResponse, type InviteResponse } from "@/lib/api";
+import { api, type InviteResponse } from "@/lib/api";
 import { ROUTES } from "@/lib/routes";
 import { PageTitle } from "@/components/page-title";
 
@@ -159,7 +158,7 @@ export function FamilyManagePage() {
 									<Select
 										value={member.role}
 										onValueChange={(role) =>
-											updateMemberMutation.mutate({ userId: member.userId, role })
+											updateMemberMutation.mutate({ userId: member.userId, role: role as string })
 										}
 									>
 										<SelectTrigger className="w-28">

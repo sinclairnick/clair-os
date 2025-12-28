@@ -15,7 +15,6 @@ import {
 	X,
 	ExternalLink,
 	BookOpen,
-	ArrowRight,
 	ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";

@@ -2,7 +2,6 @@
 
 import * as chrono from 'chrono-node';
 import { formatDuration } from './blocknote-schema';
-import type { BlockNoteEditor } from '@blocknote/core';
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -227,7 +226,7 @@ export function getTimerItems(query: string): TimerItem[] {
 // ─────────────────────────────────────────────────────────────
 
 export function insertIngredientMention(
-	editor: BlockNoteEditor<any>,
+	editor: any,
 	item: MentionItem
 ) {
 	editor.insertInlineContent([
@@ -246,7 +245,7 @@ export function insertIngredientMention(
 }
 
 export function insertTimerMention(
-	editor: BlockNoteEditor<any>,
+	editor: any,
 	item: TimerItem
 ) {
 	editor.insertInlineContent([
@@ -262,7 +261,7 @@ export function insertTimerMention(
 }
 
 export function insertRecipeMention(
-	editor: BlockNoteEditor<any>,
+	editor: any,
 	recipe: RecipeReference
 ) {
 	editor.insertInlineContent([
