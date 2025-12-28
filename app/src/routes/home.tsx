@@ -38,12 +38,15 @@ const quickLinks = [
 	},
 ];
 
+import { PageTitle } from "@/components/page-title";
+
 export function HomePage() {
 	const { timers, startTimer, pauseTimer, resetTimer, removeTimer } = useTimerStore();
 	const activeTimers = Object.values(timers).filter(timer => timer.status !== 'idle');
 
 	return (
 		<div className="space-y-8">
+			<PageTitle title="Dashboard" />
 			{/* Header */}
 			<div>
 				<h1 className="text-3xl font-bold text-foreground">Welcome to ClairOS</h1>

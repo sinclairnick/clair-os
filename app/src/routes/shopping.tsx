@@ -33,6 +33,7 @@ import {
 import { api } from "@/lib/api";
 import { RecipeHoverPreview } from "@/components/recipe-hover-preview";
 import { toast } from "sonner";
+import { PageTitle } from "@/components/page-title";
 
 export function ShoppingPage() {
 	const familyId = useCurrentFamilyId();
@@ -199,6 +200,7 @@ export function ShoppingPage() {
 
 	return (
 		<div className="space-y-6">
+			<PageTitle title="Shopping" />
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-foreground">Shopping Lists</h1>
@@ -207,7 +209,7 @@ export function ShoppingPage() {
 					</p>
 				</div>
 				<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-					<DialogTrigger asChild>
+					<DialogTrigger>
 						<Button>
 							<Plus className="w-4 h-4 mr-2" />
 							New List
@@ -326,7 +328,7 @@ export function ShoppingPage() {
 												{list.items.length}
 											</span>
 											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
+												<DropdownMenuTrigger>
 													<Button variant="ghost" size="icon" className="h-8 w-8">
 														<MoreVertical className="w-4 h-4" />
 													</Button>

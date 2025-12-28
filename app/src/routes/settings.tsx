@@ -5,6 +5,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/components/auth-provider";
 import { Sun, Moon, Monitor, Users, ChevronRight } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
+import { PageTitle } from "@/components/page-title";
 
 export function SettingsPage() {
 	const { theme, setTheme } = useTheme();
@@ -12,6 +13,7 @@ export function SettingsPage() {
 
 	return (
 		<div className="space-y-6">
+			<PageTitle title="Settings" />
 			<div>
 				<h1 className="text-2xl font-bold text-foreground">Settings</h1>
 				<p className="text-muted-foreground">

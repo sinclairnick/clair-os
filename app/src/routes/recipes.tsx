@@ -40,6 +40,7 @@ import { RecipeImportDialog } from "@/components/recipe-import-dialog";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PageTitle } from "@/components/page-title";
 
 export function RecipesPage() {
 	const navigate = useNavigate();
@@ -170,6 +171,7 @@ export function RecipesPage() {
 
 	return (
 		<div className="space-y-6">
+			<PageTitle title="Recipes" />
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-foreground">Recipes</h1>
@@ -261,7 +263,7 @@ export function RecipesPage() {
 
 					{/* Sort Dropdown */}
 					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
+						<DropdownMenuTrigger>
 							<Button variant="outline">
 								<ArrowUpDown className="w-4 h-4 mr-2" />
 								Sort
@@ -293,7 +295,7 @@ export function RecipesPage() {
 
 					{/* Filters Popover */}
 					<Popover>
-						<PopoverTrigger asChild>
+						<PopoverTrigger>
 							<Button variant="outline">
 								<SlidersHorizontal className="w-4 h-4 mr-2" />
 								Filters
@@ -541,4 +543,3 @@ export function RecipesPage() {
 		</div>
 	);
 }
-

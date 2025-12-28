@@ -387,8 +387,6 @@ async function processRecipeFolder(
 		const jsonPath = path.join(recipeFolder, "recipe.json");
 		let recipe: ParsedRecipe;
 
-		console.log(jsonPath)
-
 		if (fs.existsSync(jsonPath)) {
 			recipe = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
 		} else {

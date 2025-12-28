@@ -22,6 +22,7 @@ import { useCurrentFamilyId, useAuth } from "@/components/auth-provider";
 import { api } from "@/lib/api";
 import { ROUTES } from "@/lib/routes";
 import { formatDistanceToNow } from "date-fns";
+import { PageTitle } from "@/components/page-title";
 
 export function UserProfilePage() {
 	const { userId } = useParams<{ userId: string }>();
@@ -80,6 +81,7 @@ export function UserProfilePage() {
 
 	return (
 		<div className="space-y-6">
+			<PageTitle title={`${member.displayName}'s Profile`} />
 			{/* Back Button + Header */}
 			<div className="flex items-start gap-4">
 				<Link to={ROUTES.FAMILY_MANAGE}>

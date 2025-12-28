@@ -28,6 +28,7 @@ import { api } from "@/lib/api";
 import { format, isPast, isToday } from "date-fns";
 import { TaskBoard } from "@/components/task-board";
 import { useAppStore } from "@/lib/store";
+import { PageTitle } from "@/components/page-title";
 
 const priorityColors = {
 	low: "bg-secondary text-secondary-foreground",
@@ -137,6 +138,7 @@ export function TasksPage() {
 
 	return (
 		<div className="space-y-6">
+			<PageTitle title="Tasks" />
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold text-foreground">Tasks & Chores</h1>
@@ -165,7 +167,7 @@ export function TasksPage() {
 					</div>
 
 					<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-						<DialogTrigger asChild>
+						<DialogTrigger>
 							<Button>
 								<Plus className="w-4 h-4 mr-2" />
 								Add Task

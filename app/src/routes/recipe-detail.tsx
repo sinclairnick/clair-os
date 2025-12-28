@@ -20,6 +20,7 @@ import { useAppStore } from "@/lib/store";
 import { useWatchedRecipesStore } from "@/lib/watched-recipes-store";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PageTitle } from "@/components/page-title";
 
 export function RecipeDetailPage() {
 	const { recipeId } = useParams<{ recipeId: string }>();
@@ -228,6 +229,7 @@ export function RecipeDetailPage() {
 
 	return (
 		<div className="space-y-6">
+			<PageTitle title={recipe.title} />
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<Button variant="ghost" size="icon" onClick={() => navigate("/recipes")}>
@@ -363,16 +365,19 @@ export function RecipeDetailPage() {
 									>
 										<Plus className="w-3 h-3" />
 									</Button>
-									{scaleFactor !== 1 && (
-										<Button
-											size="sm"
-											variant="ghost"
-											className="h-6 px-2 text-xs"
-											onClick={() => handleScaleChange(1)}
-										>
-											Reset
-										</Button>
-									)}
+									<div className="w-8 flex justify-center">
+										{scaleFactor !== 1 && (
+											<Button
+												size="icon"
+												variant="ghost"
+												className="h-6 w-6 text-muted-foreground hover:text-foreground"
+												onClick={() => handleScaleChange(1)}
+												title="Reset scaling"
+											>
+												<RotateCcw className="w-3 h-3" />
+											</Button>
+										)}
+									</div>
 								</div>
 							</div>
 						</CardHeader>

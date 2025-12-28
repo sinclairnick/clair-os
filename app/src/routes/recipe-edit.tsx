@@ -17,6 +17,7 @@ import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/queries";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PageTitle } from "@/components/page-title";
 
 // Common units for ingredient measurement - used as datalist suggestions
 const COMMON_UNITS = [
@@ -361,6 +362,9 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 		},
 	});
 
+	const formTitle = useWatch({ control: form.control, name: "title" });
+	const pageTitle = isNew ? "New Recipe" : `Edit ${formTitle || "Recipe"}`;
+
 
 	const { fields: ingredientFields, append: appendIngredient, remove: removeIngredientField, move: moveIngredientField } = useFieldArray({
 		control: form.control,
@@ -626,7 +630,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 
 	return (
 		<FormProvider {...form}>
-
+			<PageTitle title={pageTitle} />
 			<form onSubmit={onSubmit} className="space-y-6 min-h-[150vh]">
 				{/* Datalist for unit suggestions */}
 				<datalist id="unit-suggestions">
