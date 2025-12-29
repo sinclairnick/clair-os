@@ -68,12 +68,17 @@ services:
     image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
     environment:
       DATABASE_URL: postgres://clairios:${DB_PASSWORD}@db:5432/clairios
+      DB_PASSWORD: ${DB_PASSWORD}
       PORT: 3001
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET}
       OPENFGA_API_URL: http://openfga:8080
       MINIO_ENDPOINT: minio
       MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
       - "3001:3001"
     healthcheck:
