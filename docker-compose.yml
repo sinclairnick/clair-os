@@ -24,6 +24,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/openfga", "health-check"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: on-failure
 
   minio:
@@ -37,6 +43,11 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     restart: on-failure
 
   # Drizzle migrations
@@ -82,6 +93,10 @@ services:
         condition: service_completed_successfully
       openfga-migrate:
         condition: service_completed_successfully
+      openfga:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     restart: always
 
   app:
@@ -90,6 +105,9 @@ services:
       VITE_API_URL: ${API_URL}
     ports:
       - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy
     restart: always
 
   # PostgreSQL backups - daily with retention
@@ -141,23 +159,23 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /Users/nick/clair-os/data/postgres
+      device: ${HOME}/clair-os/data/postgres
   minio_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /Users/nick/clair-os/data/minio
+      device: ${HOME}/clair-os/data/minio
   backup_postgres:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /Users/nick/clair-os/data/backups/postgres
+      device: ${HOME}/clair-os/data/backups/postgres
   backup_minio:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /Users/nick/clair-os/data/backups/minio
+      device: ${HOME}/clair-os/data/backups/minio
 
