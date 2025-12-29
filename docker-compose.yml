@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: clairios
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ${HOME}/clair-os/data/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U clairios"]
       interval: 5s
@@ -39,7 +39,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
-      - minio_data:/data
+      - ${HOME}/clair-os/data/minio:/data
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -124,7 +124,7 @@ services:
       BACKUP_KEEP_MONTHS: 6
       HEALTHCHECK_PORT: 8080
     volumes:
-      - backup_postgres:/backups
+      - ${HOME}/clair-os/data/backups/postgres:/backups
     depends_on:
       db:
         condition: service_healthy
@@ -147,35 +147,10 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
-      - backup_minio:/backups
+      - ${HOME}/clair-os/data/backups/minio:/backups
     depends_on:
       minio:
         condition: service_started
     restart: always
 
-volumes:
-  postgres_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${HOME}/clair-os/data/postgres
-  minio_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${HOME}/clair-os/data/minio
-  backup_postgres:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${HOME}/clair-os/data/backups/postgres
-  backup_minio:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${HOME}/clair-os/data/backups/minio
 
