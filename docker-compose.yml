@@ -34,6 +34,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_SERVER_URL: ${MINIO_PUBLIC_URL}
     volumes:
       - ${HOME}/clair-os/data/minio:/data
 
