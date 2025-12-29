@@ -99,8 +99,6 @@ services:
 
   app:
     image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/app:latest
-    environment:
-      VITE_API_URL: ${API_URL}
     ports:
       - "80:80"
     depends_on:

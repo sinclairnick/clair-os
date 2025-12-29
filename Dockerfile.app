@@ -13,17 +13,10 @@ COPY app/package.json ./app/
 RUN --mount=type=cache,id=bun,target=~/.bun/install/cache \
     bun install --filter app --filter 'packages/*' --frozen-lockfile
 
-
-
-
 # Copy source
 COPY packages/shared ./packages/shared
 COPY app ./app
 COPY tsconfig.json ./
-
-# Build args for environment variables
-ARG VITE_API_URL=http://localhost:3001
-ENV VITE_API_URL=$VITE_API_URL
 
 # Build the app
 RUN bun --filter app build

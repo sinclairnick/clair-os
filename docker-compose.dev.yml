@@ -123,8 +123,6 @@ services:
     command: sh -c "cd /workspace && bun install && cd /workspace/app && bun run dev --host 0.0.0.0"
     env_file:
       - .env
-    environment:
-      VITE_API_URL: http://localhost:3001
     volumes:
       - .:/workspace
       - app_node_modules:/workspace/node_modules
