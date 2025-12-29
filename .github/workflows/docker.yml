@@ -17,14 +17,10 @@ jobs:
         include:
           - service: api
             file: ./Dockerfile.api
-            target: api
+            target: runner
             image: api
             build_args: ""
-          - service: api-migrations
-            file: ./Dockerfile.api
-            target: migrations
-            image: api-migrations
-            build_args: ""
+
           - service: app
             file: ./Dockerfile.app
             target: ""

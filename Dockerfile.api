@@ -16,8 +16,8 @@ RUN --mount=type=cache,id=bun,target=~/.bun/install/cache \
     bun install --filter api --filter 'packages/*' --frozen-lockfile
 
 
-# Production API stage
-FROM base AS api
+# Production API stage (used for both running the API and migrations)
+FROM base AS runner
 RUN apk add --no-cache curl
 
 # Copy node_modules, source, and configs
@@ -26,24 +26,11 @@ COPY packages/shared ./packages/shared
 COPY api ./api
 COPY package.json tsconfig.json ./
 
-
 WORKDIR /app/api
 EXPOSE 3001
 
-# Run the API directly from source using Bun
+# Default command runs the API, but can be overridden for migrations
 CMD ["bun", "src/index.ts"]
-
-# Migrations stage
-FROM base AS migrations
-
-# Copy node_modules, source, and configs
-COPY --from=builder /app/node_modules ./node_modules
-COPY packages/shared ./packages/shared
-COPY api ./api
-COPY package.json tsconfig.json ./
-
-WORKDIR /app/api
-CMD ["bun", "run", "db:migrate"]
 
 
 

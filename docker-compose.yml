@@ -46,9 +46,11 @@ services:
 
   # Drizzle migrations
   migrations:
-    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api-migrations:latest
+    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
+    command: ["bun", "run", "db:migrate"]
     environment:
       DATABASE_URL: postgres://clairios:${DB_PASSWORD}@db:5432/clairios
+
     depends_on:
       db:
         condition: service_healthy
