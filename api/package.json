@@ -6,9 +6,9 @@
     "build": "tsc",
     "start": "bun src/index.ts",
     "typecheck": "tsc --noEmit",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:generate": "bun drizzle-kit generate",
+    "db:migrate": "bun drizzle-kit migrate",
+    "db:studio": "bun drizzle-kit studio"
   },
   "dependencies": {
     "@clairios/shared": "workspace:*",

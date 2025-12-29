@@ -35,6 +35,8 @@ CMD ["bun", "src/index.ts"]
 
 # Migrations stage
 FROM base AS migrations
+
+# Copy node_modules, source, and configs
 COPY --from=builder /app/node_modules ./node_modules
 COPY packages/shared ./packages/shared
 COPY api ./api
@@ -42,6 +44,7 @@ COPY package.json tsconfig.json ./
 
 WORKDIR /app/api
 CMD ["bun", "run", "db:migrate"]
+
 
 
 
