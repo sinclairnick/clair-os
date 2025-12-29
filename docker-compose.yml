@@ -24,12 +24,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "/usr/local/bin/grpc_health_probe", "-addr=:8081"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
     restart: on-failure
 
   minio:
@@ -94,7 +88,7 @@ services:
       openfga-migrate:
         condition: service_completed_successfully
       openfga:
-        condition: service_healthy
+        condition: service_started
       minio:
         condition: service_healthy
     restart: always
