@@ -525,10 +525,10 @@ async function main() {
 
 		if (result.success) {
 			successCount++;
-			process.stdout.write("✅\n");
+			process.stdout.write(`[${progress}] Uploaded ${result.recipeName} ✅\n`);
 		} else {
 			failCount++;
-			process.stdout.write(`❌ ${result.error}\n`);
+			process.stdout.write(`[${progress}] Failed to upload ${result.recipeName}: ${result.error}\n`);
 		}
 
 		// Small delay to avoid overwhelming the API
