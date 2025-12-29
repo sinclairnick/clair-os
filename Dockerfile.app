@@ -10,7 +10,8 @@ COPY api/package.json ./api/
 COPY app/package.json ./app/
 
 # Install dependencies using filter to scope to app and shared
-RUN bun install --filter app --filter 'packages/*' --frozen-lockfile
+RUN --mount=type=cache,id=bun,target=~/.bun/install/cache \
+    bun install --filter app --filter 'packages/*' --frozen-lockfile
 
 
 
