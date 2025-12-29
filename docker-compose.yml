@@ -62,6 +62,16 @@ services:
       db:
         condition: service_healthy
 
+  # OpenFGA policy migration - runs on startup to update authorization model
+  policy-migrate:
+    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
+    command: ["/bin/sh", "scripts/migrate-policy.sh"]
+    environment:
+      OPENFGA_API_URL: http://openfga:8080
+    depends_on:
+      openfga:
+        condition: service_started
+
   api:
     image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
     environment:
@@ -88,6 +98,8 @@ services:
       migrations:
         condition: service_completed_successfully
       openfga-migrate:
+        condition: service_completed_successfully
+      policy-migrate:
         condition: service_completed_successfully
       openfga:
         condition: service_started
