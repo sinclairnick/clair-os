@@ -6,10 +6,14 @@ WORKDIR /app
 # Copy workspace config and lockfile
 COPY package.json bun.lock ./
 COPY packages/shared/package.json ./packages/shared/
+COPY api/package.json ./api/
 COPY app/package.json ./app/
 
-# Install dependencies
-RUN bun install --frozen-lockfile
+# Install dependencies using filter to scope to app and shared
+RUN bun install --filter app --filter 'packages/*' --frozen-lockfile
+
+
+
 
 # Copy source
 COPY packages/shared ./packages/shared

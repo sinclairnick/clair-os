@@ -9,9 +9,11 @@ FROM base AS builder
 COPY package.json bun.lock ./
 COPY packages/shared/package.json ./packages/shared/
 COPY api/package.json ./api/
+COPY app/package.json ./app/
 
-# Install dependencies
-RUN bun install --frozen-lockfile
+# Install dependencies using filter to scope to api and shared
+RUN bun install --filter api --filter 'packages/*' --frozen-lockfile
+
 
 # Production API stage
 FROM base AS api
