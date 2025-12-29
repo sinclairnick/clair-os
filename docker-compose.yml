@@ -25,7 +25,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "/usr/local/bin/openfga", "health-check"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
       interval: 10s
       timeout: 5s
       retries: 3
