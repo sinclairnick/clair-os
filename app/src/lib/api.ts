@@ -1,5 +1,5 @@
 // API client for frontend
-const API_BASE = `${import.meta.env.VITE_API_URL}/api`;
+const API_BASE = `/api`;
 
 type FetchOptions = RequestInit & {
 	params?: Record<string, string>;

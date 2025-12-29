@@ -34,9 +34,7 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - ${HOME}/clair-os/data/minio:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -81,8 +79,7 @@ services:
       MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    ports:
-      - "3001:3001"
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
       interval: 10s
