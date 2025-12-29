@@ -65,8 +65,7 @@ services:
 
   # OpenFGA policy migration - runs on startup to update authorization model
   policy-migrate:
-    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
-    command: ["/bin/sh", "scripts/migrate-policy.sh"]
+    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/policy:latest
     environment:
       OPENFGA_API_URL: http://openfga:8080
     depends_on:

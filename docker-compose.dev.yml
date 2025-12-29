@@ -73,8 +73,7 @@ services:
     image: clair-os-policy-migrate-dev
     build:
       context: .
-      dockerfile: Dockerfile.api
-      target: runner
+      dockerfile: Dockerfile.policy
     working_dir: /app
     command: ["sh", "api/scripts/migrate-policy.sh"]
     environment:
