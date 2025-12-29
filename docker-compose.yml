@@ -37,6 +37,11 @@ services:
     volumes:
       - ${HOME}/clair-os/data/minio:/data
 
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     ports:
       - "9000:9000"
       - "9001:9001"
