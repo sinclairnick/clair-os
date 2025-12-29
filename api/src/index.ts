@@ -1,4 +1,3 @@
-import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
@@ -67,15 +66,11 @@ app.route('/api/tasks', tasksRouter);
 import { storageRouter } from './routes/storage.js';
 app.route('/api/storage', storageRouter);
 
-// Start server
 const port = parseInt(process.env.PORT || '3001', 10);
-
 console.log(`🚀 ClairOS API running on http://localhost:${port}`);
 
-serve({
-	fetch: app.fetch,
+export default {
 	port,
-});
-
-export default app;
+	fetch: app.fetch,
+};
 export type { Variables };

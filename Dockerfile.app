@@ -1,18 +1,15 @@
 # Build stage
-FROM node:22-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Copy workspace config
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+# Copy workspace config and lockfile
+COPY package.json bun.lock ./
 COPY packages/shared/package.json ./packages/shared/
 COPY app/package.json ./app/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 # Copy source
 COPY packages/shared ./packages/shared
@@ -24,7 +21,7 @@ ARG VITE_API_URL=http://localhost:3001
 ENV VITE_API_URL=$VITE_API_URL
 
 # Build the app
-RUN pnpm --filter app build
+RUN bun --filter app build
 
 # Production stage - serve with nginx
 FROM nginx:alpine

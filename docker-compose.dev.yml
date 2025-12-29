@@ -72,9 +72,9 @@ services:
 
   # Database migrations for app schema (Drizzle)
   db-migrate:
-    image: node:22-alpine
+    image: oven/bun:1-alpine
     working_dir: /workspace/api
-    command: sh -c "corepack enable && corepack prepare pnpm@latest --activate && cd /workspace && pnpm install && cd /workspace/api && pnpm db:migrate"
+    command: sh -c "cd /workspace && bun install && cd /workspace/api && bun db:migrate"
     environment:
       DATABASE_URL: postgres://clairios:${DB_PASSWORD:-clairios_dev}@db:5432/clairios
     volumes:
@@ -88,9 +88,9 @@ services:
 
   # API with live reloading
   api:
-    image: node:22-alpine
+    image: oven/bun:1-alpine
     working_dir: /workspace/api
-    command: sh -c "corepack enable && corepack prepare pnpm@latest --activate && cd /workspace && pnpm install && cd /workspace/api && pnpm run dev"
+    command: sh -c "cd /workspace && bun install && cd /workspace/api && bun run dev"
     env_file:
       - .env
     environment:
@@ -118,9 +118,9 @@ services:
 
   # Frontend with live reloading
   app:
-    image: node:22-alpine
+    image: oven/bun:1-alpine
     working_dir: /workspace/app
-    command: sh -c "corepack enable && corepack prepare pnpm@latest --activate && cd /workspace && pnpm install && cd /workspace/app && pnpm run dev --host 0.0.0.0"
+    command: sh -c "cd /workspace && bun install && cd /workspace/app && bun run dev --host 0.0.0.0"
     env_file:
       - .env
     environment:

@@ -8,21 +8,21 @@
     "app"
   ],
   "scripts": {
-    "dev": "pnpm run --filter '*' dev",
-    "dev:api": "pnpm run --filter api dev",
-    "dev:app": "pnpm run --filter app dev",
+    "dev": "bun --filter '*' dev",
+    "dev:api": "bun --filter api dev",
+    "dev:app": "bun --filter app dev",
     "dev:infra": "docker-compose -f docker-compose.infra.yml up -d",
     "dev:infra:down": "docker-compose -f docker-compose.infra.yml down",
     "dev:docker": "docker-compose -f docker-compose.dev.yml up",
-    "build": "pnpm run --filter '*' build",
-    "build:api": "pnpm run --filter api build",
-    "build:app": "pnpm run --filter app build",
-    "lint": "pnpm run --filter '*' lint",
-    "test": "pnpm run --filter '*' test",
-    "db:generate": "pnpm run --filter api db:generate",
-    "db:migrate": "pnpm run --filter api db:migrate",
-    "db:studio": "pnpm run --filter api db:studio",
-    "import:recipes": "tsx scripts/import-legacy-recipes.ts"
+    "build": "bun --filter '*' build",
+    "build:api": "bun --filter api build",
+    "build:app": "bun --filter app build",
+    "lint": "bun --filter '*' lint",
+    "test": "bun --filter '*' test",
+    "db:generate": "bun --filter api db:generate",
+    "db:migrate": "bun --filter api db:migrate",
+    "db:studio": "bun --filter api db:studio",
+    "import:recipes": "bun scripts/import-legacy-recipes.ts"
   },
   "devDependencies": {
     "tsx": "^4.19.4",
