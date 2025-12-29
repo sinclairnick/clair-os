@@ -2,13 +2,13 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: clairios
+      POSTGRES_USER: clairos
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: clairios
+      POSTGRES_DB: clairos
     volumes:
       - ${HOME}/clair-os/data/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U clairios"]
+      test: ["CMD-SHELL", "pg_isready -U clairos"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -19,7 +19,7 @@ services:
     command: run
     environment:
       OPENFGA_DATASTORE_ENGINE: postgres
-      OPENFGA_DATASTORE_URI: postgres://clairios:${DB_PASSWORD}@db:5432/clairios?sslmode=disable
+      OPENFGA_DATASTORE_URI: postgres://clairos:${DB_PASSWORD}@db:5432/clairos?sslmode=disable
       OPENFGA_LOG_FORMAT: json
     depends_on:
       db:
@@ -35,11 +35,9 @@ services:
     volumes:
       - ${HOME}/clair-os/data/minio:/data
 
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     restart: on-failure
 
   # Drizzle migrations
@@ -47,7 +45,7 @@ services:
     image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
     command: ["bun", "run", "db:migrate"]
     environment:
-      DATABASE_URL: postgres://clairios:${DB_PASSWORD}@db:5432/clairios
+      DATABASE_URL: postgres://clairos:${DB_PASSWORD}@db:5432/clairos
 
     depends_on:
       db:
@@ -59,7 +57,7 @@ services:
     command: migrate
     environment:
       OPENFGA_DATASTORE_ENGINE: postgres
-      OPENFGA_DATASTORE_URI: postgres://clairios:${DB_PASSWORD}@db:5432/clairios?sslmode=disable
+      OPENFGA_DATASTORE_URI: postgres://clairos:${DB_PASSWORD}@db:5432/clairos?sslmode=disable
     depends_on:
       db:
         condition: service_healthy
@@ -67,7 +65,7 @@ services:
   api:
     image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
     environment:
-      DATABASE_URL: postgres://clairios:${DB_PASSWORD}@db:5432/clairios
+      DATABASE_URL: postgres://clairos:${DB_PASSWORD}@db:5432/clairos
       DB_PASSWORD: ${DB_PASSWORD}
       PORT: 3001
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
@@ -111,8 +109,8 @@ services:
     image: prodrigestivill/postgres-backup-local:latest
     environment:
       POSTGRES_HOST: db
-      POSTGRES_DB: clairios
-      POSTGRES_USER: clairios
+      POSTGRES_DB: clairos
+      POSTGRES_USER: clairos
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       SCHEDULE: "@daily"
       BACKUP_KEEP_DAYS: 7
@@ -134,7 +132,7 @@ services:
       -c "
       while true; do
         mc alias set source http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
-        mc mirror --overwrite source/clairios /backups/minio;
+        mc mirror --overwrite source/clairos /backups/minio;
         echo 'Minio backup completed at' $$(date);
         sleep 86400;
       done

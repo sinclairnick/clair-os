@@ -42,13 +42,13 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: clairios
+      POSTGRES_USER: clairos
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: clairios
+      POSTGRES_DB: clairos
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U clairios"]
+      test: ["CMD-SHELL", "pg_isready -U clairos"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -59,7 +59,7 @@ services:
       dockerfile: Dockerfile.api
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://clairios:${DB_PASSWORD}@db:5432/clairios
+      DATABASE_URL: postgres://clairos:${DB_PASSWORD}@db:5432/clairos
       PORT: 3001
     depends_on:
       db:
@@ -105,10 +105,10 @@ bun run db:migrate
 
 ```bash
 # Create a backup
-docker-compose exec db pg_dump -U clairios clairios > backup.sql
+docker-compose exec db pg_dump -U clairos clairos > backup.sql
 
 # Restore from backup
-docker-compose exec -T db psql -U clairios clairios < backup.sql
+docker-compose exec -T db psql -U clairos clairos < backup.sql
 ```
 
 ### Reset Database

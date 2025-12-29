@@ -12,8 +12,8 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-clairios_admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-clairios_storage_dev}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-clairos_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-clairos_storage_dev}
     volumes:
       - minio_data:/data
     ports:
@@ -29,15 +29,15 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: clairios
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-clairios_dev}
-      POSTGRES_DB: clairios
+      POSTGRES_USER: clairos
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-clairos_dev}
+      POSTGRES_DB: clairos
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U clairios"]
+      test: ["CMD-SHELL", "pg_isready -U clairos"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -48,7 +48,7 @@ services:
     command: migrate
     environment:
       OPENFGA_DATASTORE_ENGINE: postgres
-      OPENFGA_DATASTORE_URI: postgres://clairios:${DB_PASSWORD:-clairios_dev}@db:5432/clairios?sslmode=disable
+      OPENFGA_DATASTORE_URI: postgres://clairos:${DB_PASSWORD:-clairos_dev}@db:5432/clairos?sslmode=disable
     depends_on:
       db:
         condition: service_healthy
@@ -60,7 +60,7 @@ services:
     command: run
     environment:
       OPENFGA_DATASTORE_ENGINE: postgres
-      OPENFGA_DATASTORE_URI: postgres://clairios:${DB_PASSWORD:-clairios_dev}@db:5432/clairios?sslmode=disable
+      OPENFGA_DATASTORE_URI: postgres://clairos:${DB_PASSWORD:-clairos_dev}@db:5432/clairos?sslmode=disable
       OPENFGA_LOG_FORMAT: json
     ports:
       - "8080:8080"   # HTTP API
@@ -76,7 +76,7 @@ services:
     working_dir: /workspace/api
     command: sh -c "cd /workspace && bun install && cd /workspace/api && bun db:migrate"
     environment:
-      DATABASE_URL: postgres://clairios:${DB_PASSWORD:-clairios_dev}@db:5432/clairios
+      DATABASE_URL: postgres://clairos:${DB_PASSWORD:-clairos_dev}@db:5432/clairos
     volumes:
       - .:/workspace
       - api_node_modules:/workspace/node_modules
@@ -94,7 +94,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgres://clairios:${DB_PASSWORD:-clairios_dev}@db:5432/clairios
+      DATABASE_URL: postgres://clairos:${DB_PASSWORD:-clairos_dev}@db:5432/clairos
       OPENFGA_API_URL: http://openfga:8080
       MINIO_ENDPOINT: minio
       PORT: 3001

@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "clairios",
+      "name": "clairos",
       "devDependencies": {
         "tsx": "^4.19.4",
         "typescript": "~5.9.3",
@@ -12,7 +12,7 @@
     "api": {
       "name": "api",
       "dependencies": {
-        "@clairios/shared": "workspace:*",
+        "@clairos/shared": "workspace:*",
         "@hono/node-server": "^1.13.8",
         "@hono/zod-validator": "^0.7.6",
         "@openfga/sdk": "^0.8.0",
@@ -43,7 +43,7 @@
         "@blocknote/core": "^0.45.0",
         "@blocknote/react": "^0.45.0",
         "@blocknote/shadcn": "^0.45.0",
-        "@clairios/shared": "workspace:*",
+        "@clairos/shared": "workspace:*",
         "@fontsource-variable/inter": "^5.2.8",
         "@hookform/resolvers": "^5.2.2",
         "@radix-ui/react-tabs": "^1.1.13",
@@ -87,7 +87,7 @@
       },
     },
     "packages/shared": {
-      "name": "@clairios/shared",
+      "name": "@clairos/shared",
       "version": "0.1.0",
       "devDependencies": {
         "typescript": "~5.9.3",
@@ -315,7 +315,7 @@
 
     "@blocknote/shadcn": ["@blocknote/shadcn@0.45.0", "", { "dependencies": { "@blocknote/core": "0.45.0", "@blocknote/react": "0.45.0", "@radix-ui/react-avatar": "1.1.11", "@radix-ui/react-dropdown-menu": "2.1.16", "@radix-ui/react-label": "2.1.8", "@radix-ui/react-popover": "1.1.15", "@radix-ui/react-select": "2.2.6", "@radix-ui/react-slot": "1.2.4", "@radix-ui/react-tabs": "1.1.13", "@radix-ui/react-toggle": "1.1.10", "@radix-ui/react-tooltip": "1.2.8", "autoprefixer": "10.4.23", "class-variance-authority": "0.7.1", "clsx": "2.1.1", "lucide-react": "0.525.0", "react-hook-form": "7.69.0", "tailwind-merge": "2.6.0", "zod": "3.25.76" }, "peerDependencies": { "react": "19.2.3", "react-dom": "19.2.3", "tailwindcss": "4.1.18" } }, "sha512-+TIDNyPQ1WMHqTuaOKAGRkqHBVM96UBHer6mUUdrIUPy0fQb+Es58yn1CfsPU4sflYpA76BEJotq8lenGWWoUg=="],
 
-    "@clairios/shared": ["@clairios/shared@workspace:packages/shared"],
+    "@clairos/shared": ["@clairos/shared@workspace:packages/shared"],
 
     "@colors/colors": ["@colors/colors@1.6.0", "", {}, "sha512-Ir+AOibqzrIsL6ajt3Rz3LskB7OiMVHqltZmspbW/TJuTVuyOMirVqAkjfY6JISiLHgyNqicAC8AyHHGzNd/dA=="],
 
