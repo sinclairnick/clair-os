@@ -43,9 +43,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     restart: on-failure
 
   # Drizzle migrations
