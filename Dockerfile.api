@@ -41,6 +41,7 @@ COPY api ./api
 COPY package.json tsconfig.json ./
 
 WORKDIR /app/api
-CMD ["bun", "db:migrate"]
+CMD ["bun", "run", "db:migrate"]
+
 
 
