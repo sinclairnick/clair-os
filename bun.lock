@@ -17,6 +17,7 @@
         "@hono/zod-validator": "^0.7.6",
         "@openfga/sdk": "^0.8.0",
         "better-auth": "^1.4.9",
+        "drizzle-kit": "^0.31.8",
         "drizzle-orm": "^0.45.1",
         "hono": "^4.11.2",
         "minio": "^8.0.6",
@@ -27,7 +28,6 @@
       },
       "devDependencies": {
         "@types/node": "^22.10.0",
-        "drizzle-kit": "^0.31.8",
         "tsx": "^4.19.2",
         "typescript": "~5.9.3",
       },
