@@ -265,6 +265,7 @@ export function Sidebar() {
 							<img
 								src={user.image}
 								alt={user.name}
+								loading="lazy"
 								className="w-8 h-8 rounded-full"
 							/>
 						) : (

@@ -869,6 +869,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 									<img
 										src={form.watch("imageUrl")}
 										alt="Recipe preview"
+										loading="lazy"
 										className="w-full h-full object-cover"
 										onError={(e) => {
 											(e.target as HTMLImageElement).style.display = 'none';

@@ -492,6 +492,7 @@ export function RecipesPage() {
 									<img
 										src={recipe.imageUrl}
 										alt={recipe.title}
+										loading="lazy"
 										className="w-full h-full object-cover group-hover:scale-105 transition-transform"
 									/>
 								</div>

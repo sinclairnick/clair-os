@@ -48,6 +48,7 @@ export function RecipeHoverPreview({ recipeId }: RecipeHoverPreviewProps) {
 									<img
 										src={recipe.imageUrl}
 										alt={recipe.title}
+										loading="lazy"
 										className="h-full w-full object-cover"
 									/>
 								</div>

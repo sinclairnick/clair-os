@@ -258,6 +258,7 @@ export function RecipeDetailPage() {
 						<img
 							src={recipe.imageUrl}
 							alt={recipe.title}
+							loading="lazy"
 							className="w-full h-full object-cover"
 						/>
 					</div>

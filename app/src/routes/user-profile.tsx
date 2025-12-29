@@ -95,6 +95,7 @@ export function UserProfilePage() {
 							<img
 								src={member.image}
 								alt={member.name}
+								loading="lazy"
 								className="w-16 h-16 rounded-full ring-4 ring-background"
 							/>
 						) : (
@@ -217,6 +218,7 @@ export function UserProfilePage() {
 										<img
 											src={recipe.imageUrl}
 											alt={recipe.title}
+											loading="lazy"
 											className="w-10 h-10 rounded object-cover"
 										/>
 									) : (
