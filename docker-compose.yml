@@ -24,6 +24,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      openfga-migrate:
+        condition: service_completed_successfully
     restart: on-failure
 
   minio:
@@ -46,7 +48,6 @@ services:
     command: ["bun", "run", "db:migrate"]
     environment:
       DATABASE_URL: postgres://clairos:${DB_PASSWORD}@db:5432/clairos
-
     depends_on:
       db:
         condition: service_healthy
@@ -69,6 +70,8 @@ services:
     environment:
       OPENFGA_API_URL: http://openfga:8080
     depends_on:
+      db:
+        condition: service_healthy
       openfga:
         condition: service_started
 
@@ -87,7 +90,6 @@ services:
       MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
       interval: 10s
@@ -104,6 +106,8 @@ services:
       openfga:
         condition: service_started
       minio:
+        condition: service_healthy
+      db:
         condition: service_healthy
     restart: always
 
