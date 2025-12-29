@@ -9,12 +9,12 @@ services:
       POSTGRES_DB: clairios
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-      restart_policy:
-        condition: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clairios"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: on-failure
 
   openfga:
     image: openfga/openfga:latest
@@ -23,10 +23,10 @@ services:
       OPENFGA_DATASTORE_ENGINE: postgres
       OPENFGA_DATASTORE_URI: postgres://clairios:${DB_PASSWORD}@db:5432/clairios?sslmode=disable
       OPENFGA_LOG_FORMAT: json
-    deploy:
-      replicas: 2
-      restart_policy:
-        condition: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
 
   minio:
     image: minio/minio:latest
@@ -37,45 +37,29 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - target: 9000
-        published: 9000
-        mode: ingress
-      - target: 9001
-        published: 9001
-        mode: ingress
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
+      - "9000:9000"
+      - "9001:9001"
+    restart: on-failure
 
-  # Drizzle migrations job (Replicated Job)
+  # Drizzle migrations
   migrations:
     image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api-migrations:latest
     environment:
       DATABASE_URL: postgres://clairios:${DB_PASSWORD}@db:5432/clairios
-    deploy:
-      mode: replicated-job
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-        max_attempts: 10
-      placement:
-        constraints:
-          - node.role == manager
+    depends_on:
+      db:
+        condition: service_healthy
 
-  # OpenFGA migrations job (Replicated Job)
+  # OpenFGA migrations
   openfga-migrate:
     image: openfga/openfga:latest
     command: migrate
     environment:
       OPENFGA_DATASTORE_ENGINE: postgres
       OPENFGA_DATASTORE_URI: postgres://clairios:${DB_PASSWORD}@db:5432/clairios?sslmode=disable
-    deploy:
-      mode: replicated-job
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-        max_attempts: 5
+    depends_on:
+      db:
+        condition: service_healthy
 
   api:
     image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
@@ -88,59 +72,27 @@ services:
       MINIO_ENDPOINT: minio
       MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
     ports:
-      - target: 3001
-        published: 3001
-        mode: ingress
+      - "3001:3001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 20s
-    deploy:
-      replicas: 3
-      update_config:
-        parallelism: 1
-        delay: 10s
-        order: start-first
-      rollback_config:
-        parallelism: 0
-        order: stop-first
-      restart_policy:
-        condition: any
-        delay: 5s
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      openfga-migrate:
+        condition: service_completed_successfully
+    restart: always
 
   app:
     image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/app:latest
     environment:
       VITE_API_URL: ${API_URL}
     ports:
-      - target: 80
-        published: 80
-        mode: ingress
-    deploy:
-      replicas: 3
-      update_config:
-        parallelism: 1
-        order: start-first
-
-  # Portainer for visual Docker management
-  portainer:
-    image: portainer/portainer-ce:latest
-    command: -H unix:///var/run/docker.sock
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
-    ports:
-      - target: 9000
-        published: 9443
-        mode: ingress
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-      restart_policy:
-        condition: on-failure
+      - "80:80"
+    restart: always
 
   # PostgreSQL backups - daily with retention
   postgres-backup:
@@ -157,12 +109,10 @@ services:
       HEALTHCHECK_PORT: 8080
     volumes:
       - backup_postgres:/backups
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-      restart_policy:
-        condition: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
 
   # Minio backups - syncs bucket daily
   minio-backup:
@@ -182,17 +132,34 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - backup_minio:/backups
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-      restart_policy:
-        condition: on-failure
+    depends_on:
+      minio:
+        condition: service_started
+    restart: always
 
 volumes:
   postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /Users/nick/clair-os/data/postgres
   minio_data:
-  portainer_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /Users/nick/clair-os/data/minio
   backup_postgres:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /Users/nick/clair-os/data/backups/postgres
   backup_minio:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /Users/nick/clair-os/data/backups/minio
 
