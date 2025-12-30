@@ -189,6 +189,7 @@
 /* BlockNote editor customizations */
 .bn-editor {
   min-height: 200px;
+  -webkit-touch-callout: none; /* Prevents long-press menu on iOS */
 }
 
 /* Mute the side menu (plus/drag handle buttons) */
