@@ -11,7 +11,7 @@ export default defineConfig({
 		tailwindcss(),
 		VitePWA({
 			registerType: "autoUpdate",
-			includeAssets: ["favicon.ico", "apple-touch-icon.png", "icon.svg"],
+			includeAssets: ["favicon.ico", "apple-touch-icon.png"],
 			manifest: {
 				name: "ClairOS - Family Home",
 				short_name: "ClairOS",
@@ -44,7 +44,7 @@ export default defineConfig({
 			workbox: {
 				globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
 				maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-				navigateFallbackDenylist: [/^\/api/],
+				navigateFallbackDenylist: [/^\/api/, /^\/static/],
 				runtimeCaching: [
 					{
 						urlPattern: /^https?:\/\/.*\/api\//i,
