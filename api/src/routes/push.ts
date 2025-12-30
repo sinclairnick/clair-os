@@ -4,6 +4,7 @@ import { db } from '../db/index.ts';
 import { pushSubscriptions } from '../db/schema.ts';
 import { eq, and } from 'drizzle-orm';
 import { Config } from '../config.ts';
+import { requireAuth } from '../auth/index.ts';
 
 const pushRouter = new Hono<{ Variables: { user: { id: string } } }>();
 
@@ -20,7 +21,7 @@ pushRouter.get('/key', (c) => {
 });
 
 // Subscribe to push notifications
-pushRouter.post('/subscribe', async (c) => {
+pushRouter.post('/subscribe', requireAuth, async (c) => {
 	const user = c.get('user');
 	if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
@@ -56,7 +57,7 @@ pushRouter.post('/subscribe', async (c) => {
 });
 
 // Unsubscribe from push notifications
-pushRouter.post('/unsubscribe', async (c) => {
+pushRouter.post('/unsubscribe', requireAuth, async (c) => {
 	const user = c.get('user');
 	if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
