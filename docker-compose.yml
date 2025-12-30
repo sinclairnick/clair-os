@@ -48,7 +48,7 @@ services:
   # Drizzle migrations
   migrations:
     image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
-    command: ["pnpm", "--filter", "api", "db:migrate"]
+    command: pnpm db:migrate
     environment:
       DATABASE_URL: postgres://clairos:${DB_PASSWORD}@db:5432/clairos
     depends_on:
@@ -118,7 +118,7 @@ services:
 
   jobs:
     image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
-    command: ["pnpm", "--filter", "api", "jobs:start"]
+    command: pnpm jobs:start
     environment:
       DATABASE_URL: postgres://clairos:${DB_PASSWORD}@db:5432/clairos
       DB_PASSWORD: ${DB_PASSWORD}
