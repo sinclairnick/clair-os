@@ -24,6 +24,14 @@ export const pushManager = {
 		return await registration.pushManager.getSubscription();
 	},
 
+	async getStatus(): Promise<'unsupported' | 'unsubscribed' | 'subscribed' | 'denied'> {
+		if (!(await this.isSupported())) return 'unsupported';
+		if (Notification.permission === 'denied') return 'denied';
+
+		const subscription = await this.getSubscription();
+		return subscription ? 'subscribed' : 'unsubscribed';
+	},
+
 	async subscribe() {
 		try {
 			// 1. Get Public Key from server

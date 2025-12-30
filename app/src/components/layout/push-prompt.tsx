@@ -2,22 +2,22 @@ import { useEffect, useState } from "react";
 import { pushManager } from "@/lib/push-manager";
 import { toast } from "sonner";
 import { Bell } from "lucide-react";
+import { useAuth } from "@/components/auth-provider";
 
 
 export function PushPrompt() {
+	const { user } = useAuth();
 	const [shouldShow, setShouldShow] = useState(false);
 
 	useEffect(() => {
+		if (!user) return;
+
 		const checkStatus = async () => {
-			// Don't show if push is not supported
 			if (!(await pushManager.isSupported())) return;
 
-			// Don't show if permission is already granted or denied
-			if (Notification.permission !== "default") return;
+			const status = await pushManager.getStatus();
 
-			// Check if already subscribed
-			const subscription = await pushManager.getSubscription();
-			if (!subscription) {
+			if (status === 'unsubscribed') {
 				// We wait a bit to NOT overwhelm the user immediately
 				const timer = setTimeout(() => {
 					setShouldShow(true);
@@ -27,7 +27,7 @@ export function PushPrompt() {
 		};
 
 		checkStatus();
-	}, []);
+	}, [user?.id]);
 
 	useEffect(() => {
 		if (shouldShow) {

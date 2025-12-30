@@ -21,6 +21,8 @@ import { format, isPast, isToday } from "date-fns";
 import { PageTitle } from "@/components/page-title";
 import { ROUTES } from "@/lib/routes";
 import { Link } from "react-router";
+import { pushManager } from "@/lib/push-manager";
+import { toast } from "sonner";
 
 export function RemindersPage() {
 	const familyId = useCurrentFamilyId();
@@ -30,6 +32,8 @@ export function RemindersPage() {
 	const [newTitle, setNewTitle] = useState("");
 	const [newDescription, setNewDescription] = useState("");
 	const [newRemindAt, setNewRemindAt] = useState("");
+	const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
+	const [isSubscribing, setIsSubscribing] = useState(false);
 
 	const { data: reminders, isLoading, error } = useQuery({
 		queryKey: ['reminders', familyId],
@@ -59,15 +63,48 @@ export function RemindersPage() {
 		setNewRemindAt("");
 	};
 
-	const handleCreate = () => {
+	const handleCreate = async () => {
 		if (!familyId || !newTitle.trim() || !newRemindAt) return;
 
+		// Check push status
+		const status = await pushManager.getStatus();
+
+		if (status === 'unsubscribed') {
+			setIsPushDialogOpen(true);
+			return;
+		}
+
+		if (status === 'unsupported' || status === 'denied') {
+			toast.warning("Warning: You won't receive a push notification on this device.", {
+				description: status === 'denied' ? "Notifications are blocked by your browser." : "Your browser doesn't support push notifications.",
+			});
+		}
+
+		executeCreate();
+	};
+
+	const executeCreate = () => {
+		if (!familyId) return;
 		createMutation.mutate({
 			familyId,
 			title: newTitle.trim(),
 			description: newDescription.trim() || undefined,
 			remindAt: new Date(newRemindAt).toISOString(),
 		});
+	};
+
+	const handleEnablePush = async () => {
+		setIsSubscribing(true);
+		try {
+			await pushManager.subscribe();
+			toast.success("Notifications enabled!");
+			setIsPushDialogOpen(false);
+			executeCreate();
+		} catch (error: any) {
+			toast.error(error.message || "Failed to enable notifications");
+		} finally {
+			setIsSubscribing(false);
+		}
 	};
 
 	if (!familyId) {
@@ -210,6 +247,37 @@ export function RemindersPage() {
 					))}
 				</div>
 			)}
+
+			<Dialog open={isPushDialogOpen} onOpenChange={setIsPushDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2">
+							<Bell className="w-5 h-5 text-accent-foreground" />
+							Enable Notifications?
+						</DialogTitle>
+						<DialogDescription>
+							To receive an alert for this reminder, you need to enable push notifications on this device.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter className="flex-col sm:flex-row gap-2">
+						<Button
+							variant="ghost"
+							onClick={() => {
+								setIsPushDialogOpen(false);
+								toast.warning("Reminder created, but you won't receive a push notification.");
+								executeCreate();
+							}}
+							disabled={isSubscribing}
+						>
+							Create anyway
+						</Button>
+						<Button onClick={handleEnablePush} disabled={isSubscribing}>
+							{isSubscribing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+							Enable & Create
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
