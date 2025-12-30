@@ -27,7 +27,7 @@ import { PageTitle } from "@/components/page-title";
 
 export function FamilyManagePage() {
 	const familyId = useCurrentFamilyId();
-	const { currentFamily } = useAuth();
+	const { currentFamily, user } = useAuth();
 	const queryClient = useQueryClient();
 	const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
 	const [inviteRole, setInviteRole] = useState<"admin" | "member" | "child">("member");
@@ -157,6 +157,11 @@ export function FamilyManagePage() {
 								{isAdmin ? (
 									<Select
 										value={member.role}
+										disabled={
+											member.userId === user?.id &&
+											members?.filter(m => m.role === 'admin').length === 1 &&
+											member.role === 'admin'
+										}
 										onValueChange={(role) =>
 											updateMemberMutation.mutate({ userId: member.userId, role: role as string })
 										}
