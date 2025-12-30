@@ -26,8 +26,8 @@ export async function getOpenFgaClient(): Promise<OpenFgaClient> {
 
 	if (!existingStore) {
 		console.log('OpenFGA store "clairos" not found. Waiting for migration...');
-        // Should we throw or return null? The app likely needs it.
-        // For now, let's throw to crash and restart until migration is done given restart policy
+		// Should we throw or return null? The app likely needs it.
+		// For now, let's throw to crash and restart until migration is done given restart policy
 		throw new Error('OpenFGA store "clairos" not found. Ensure migrations have run.');
 	}
 
@@ -47,8 +47,8 @@ export async function getOpenFgaClient(): Promise<OpenFgaClient> {
 }
 
 // Helper types for authorization
-export type ResourceType = 'family' | 'recipe' | 'shopping_list' | 'task' | 'meal' | 'calendar_event' | 'reminder';
-export type Permission = 'can_view' | 'can_edit' | 'can_delete' | 'can_complete' | 'can_admin';
+export type ResourceType = 'family' | 'recipe' | 'shopping_list' | 'task' | 'meal' | 'calendar_event' | 'reminder' | 'bill';
+export type Permission = 'can_view' | 'can_edit' | 'can_delete' | 'can_complete' | 'can_admin' | 'can_dismiss' | 'can_pay';
 
 // Check if a user has permission on a resource
 export async function checkPermission(

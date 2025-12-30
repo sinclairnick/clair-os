@@ -1,14 +1,19 @@
 import { Hono } from 'hono';
+import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-import { auth } from './auth.js';
-import { recipesRouter } from './routes/recipes.js';
-import { shoppingRouter } from './routes/shopping.js';
-import { tasksRouter } from './routes/tasks.js';
-import { familiesRouter } from './routes/families.js';
-import { db } from './db/index.js';
 import { sql } from 'drizzle-orm';
-import { pushRouter } from './routes/push.js';
+import { auth } from './auth.ts';
+import { db } from './db/index.ts';
+import { recipesRouter } from './routes/recipes.ts';
+import { shoppingRouter } from './routes/shopping.ts';
+import { tasksRouter } from './routes/tasks.ts';
+import { familiesRouter } from './routes/families.ts';
+import { pushRouter } from './routes/push.ts';
+import { storageRouter } from './routes/storage.ts';
+import { remindersRouter } from './routes/reminders.ts';
+import { billsRouter } from './routes/bills.ts';
+import { configureSidequest } from './jobs/index.ts';
 
 // Define custom context variables
 type Variables = {
@@ -64,15 +69,20 @@ app.route('/api/families', familiesRouter);
 app.route('/api/recipes', recipesRouter);
 app.route('/api/shopping', shoppingRouter);
 app.route('/api/tasks', tasksRouter);
-import { storageRouter } from './routes/storage.js';
 app.route('/api/storage', storageRouter);
 app.route('/api/push', pushRouter);
+app.route('/api/reminders', remindersRouter);
+app.route('/api/bills', billsRouter);
 
 const port = parseInt(process.env.PORT || '3001', 10);
-console.log(`🚀 ClairOS API running on http://localhost:${port}`);
 
-export default {
-	port,
+configureSidequest();
+
+serve({
 	fetch: app.fetch,
-};
+	port,
+}, (info) => {
+	console.log(`🚀 ClairOS API running on http://localhost:${info.port}`);
+});
+
 export type { Variables };

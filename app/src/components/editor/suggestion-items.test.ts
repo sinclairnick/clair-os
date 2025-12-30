@@ -1,4 +1,4 @@
-import { expect, test, describe } from "bun:test";
+import { expect, test, describe } from "vitest";
 import { getMentionItems, insertIngredientMention } from "./suggestion-items";
 
 describe("Ingredient Suggestions Logic", () => {

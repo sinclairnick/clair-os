@@ -48,7 +48,7 @@ services:
   # Drizzle migrations
   migrations:
     image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
-    command: ["bun", "run", "db:migrate"]
+    command: ["pnpm", "--filter", "api", "db:migrate"]
     environment:
       DATABASE_URL: postgres://clairos:${DB_PASSWORD}@db:5432/clairos
     depends_on:
@@ -101,6 +101,39 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      openfga-migrate:
+        condition: service_completed_successfully
+      policy-migrate:
+        condition: service_completed_successfully
+      openfga:
+        condition: service_started
+      minio:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    restart: always
+
+  jobs:
+    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
+    command: ["pnpm", "--filter", "api", "jobs:start"]
+    environment:
+      DATABASE_URL: postgres://clairos:${DB_PASSWORD}@db:5432/clairos
+      DB_PASSWORD: ${DB_PASSWORD}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET}
+      OPENFGA_API_URL: http://openfga:8080
+      MINIO_ENDPOINT: minio
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT}
     depends_on:
       migrations:
         condition: service_completed_successfully

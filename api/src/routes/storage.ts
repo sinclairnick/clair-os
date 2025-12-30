@@ -1,6 +1,6 @@
 import { Hono } from "hono"
-import { auth } from "../auth.js"
-import { uploadFile } from "../lib/storage.js"
+import { auth } from "../auth.ts"
+import { uploadFile } from "../lib/storage.ts"
 
 export const storageRouter = new Hono()
 

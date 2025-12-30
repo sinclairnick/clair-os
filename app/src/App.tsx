@@ -13,6 +13,8 @@ import { LoginPage } from "@/routes/login";
 import { FamilySelectPage } from "@/routes/family-select";
 import { FamilyManagePage } from "@/routes/family-manage";
 import { UserProfilePage } from "@/routes/user-profile";
+import { RemindersPage } from "@/routes/reminders";
+import { BillsPage } from "@/routes/bills";
 import { ThemeProvider } from "./components/theme-provider";
 import { ROUTES, ROUTE_PATTERNS } from "@/lib/routes";
 
@@ -40,13 +42,15 @@ export function App() {
 						<Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
 						<Route path={ROUTES.FAMILY_SETTINGS} element={<FamilyManagePage />} />
 						<Route path={ROUTE_PATTERNS.MEMBER_PROFILE} element={<UserProfilePage />} />
+						<Route path={ROUTES.REMINDERS} element={<RemindersPage />} />
+						<Route path={ROUTES.BILLS} element={<BillsPage />} />
 					</Route>
 				</Route>
 			</Routes>
 			<Toaster
 				position={isDesktop ? "bottom-center" : "top-center"}
 				toastOptions={{
-					className: "rounded-3xl",
+					className: "rounded-3xl !px-6 md:!w-[440px]",
 				}}
 			/>
 		</ThemeProvider>

@@ -17,6 +17,8 @@ import {
 	Users,
 	User,
 	ChevronRight,
+	Bell,
+	DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -38,6 +40,8 @@ const navItems = [
 	{ to: ROUTES.RECIPES, label: "Recipes", icon: CookingPot },
 	{ to: ROUTES.SHOPPING, label: "Shopping", icon: ShoppingCart },
 	{ to: ROUTES.TASKS, label: "Tasks", icon: CheckSquare },
+	{ to: ROUTES.REMINDERS, label: "Reminders", icon: Bell },
+	{ to: ROUTES.BILLS, label: "Bills", icon: DollarSign },
 	{ to: ROUTES.CALENDAR, label: "Calendar", icon: Calendar },
 	{ to: ROUTES.FAMILY_SETTINGS, label: "Family Settings", icon: Users },
 ];

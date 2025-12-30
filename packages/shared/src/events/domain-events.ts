@@ -1,7 +1,7 @@
 // ClairOS Domain Events
 // Strongly typed event envelope pattern for Sidequest.js
 
-import type { Recipe } from '../types/entities.js';
+import type { Recipe } from '../types/entities.ts';
 
 // ─────────────────────────────────────────────────────────────
 // Base Event Envelope

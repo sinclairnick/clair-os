@@ -1,7 +1,6 @@
 'use client';
 
 import { forwardRef, useImperativeHandle, useState, useMemo, useCallback } from 'react';
-import { Utensils } from 'lucide-react';
 import { BlockNoteSchema, defaultInlineContentSpecs } from '@blocknote/core';
 import { useCreateBlockNote, SuggestionMenuController } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/shadcn';
@@ -228,7 +227,8 @@ export const RecipeEditor = forwardRef<RecipeEditorRef, RecipeEditorProps>(
 					editable={editable}
 					onChange={handleChange}
 					theme={resolvedTheme}
-					className='[&>.bn-editor]:!bg-transparent'
+					className='[&>.bn-editor]:!bg-transparent [&>.bn-editor]:!px-3 [&>.bn-editor]:!py-2'
+					sideMenu={false}
 				>
 					{/* @ mention menu for ingredients */}
 					<SuggestionMenuController
@@ -241,13 +241,12 @@ export const RecipeEditor = forwardRef<RecipeEditorRef, RecipeEditorProps>(
 									if (item.isNew) {
 										title = `Create "${item.name}"`;
 									} else if (item.quantity || item.unit) {
-										title = `${item.name} (${item.quantity || ''} ${item.unit || ''})`.trim().replace(' )', ')');
+										title = ` ${item.name} (${item.quantity || ''} ${item.unit || ''})`.trim().replace(' )', ')');
 									}
 								}
 
 								return {
 									title,
-									icon: <Utensils className="w-4 h-4" />,
 									onItemClick: () => insertIngredientMention(editor, item),
 									group: 'Ingredients',
 								};

@@ -93,7 +93,7 @@ services:
       dockerfile: Dockerfile.api
       target: runner
     working_dir: /app
-    command: sh -c "bun install && cd api && bun db:migrate"
+    command: sh -c "pnpm install && cd api && pnpm db:migrate"
     environment:
       DATABASE_URL: postgres://clairos:${DB_PASSWORD:-clairos_dev}@db:5432/clairos
     volumes:
@@ -113,7 +113,7 @@ services:
       dockerfile: Dockerfile.api
       target: runner
     working_dir: /app
-    command: sh -c "bun install && cd api && bun run dev"
+    command: sh -c "pnpm install && cd api && pnpm run dev"
     env_file:
       - .env
     environment:
@@ -141,6 +141,39 @@ services:
       policy-migrate:
         condition: service_completed_successfully
 
+  # Background job worker with live reloading
+  jobs:
+    image: clair-os-api-dev
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      target: runner
+    working_dir: /app
+    command: sh -c "pnpm install && cd api && pnpm run jobs:start"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://clairos:${DB_PASSWORD:-clairos_dev}@db:5432/clairos
+      OPENFGA_API_URL: http://openfga:8080
+      MINIO_ENDPOINT: minio
+      CI: true
+    volumes:
+      - .:/app
+      - api_node_modules:/app/node_modules
+      - api_pkg_node_modules:/app/api/node_modules
+      - shared_node_modules:/app/packages/shared/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+      openfga:
+        condition: service_started
+      minio:
+        condition: service_started
+      db-migrate:
+        condition: service_completed_successfully
+      policy-migrate:
+        condition: service_completed_successfully
+
   # Frontend with live reloading
   app:
     image: clair-os-app-dev
@@ -149,7 +182,7 @@ services:
       dockerfile: Dockerfile.app
       target: builder
     working_dir: /app
-    command: sh -c "bun install && cd app && bun run dev --host 0.0.0.0"
+    command: sh -c "pnpm install && cd app && pnpm run dev --host 0.0.0.0"
     env_file:
       - .env
     volumes:

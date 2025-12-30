@@ -8,6 +8,7 @@ import { checkTimerCompletions, useTimerStore } from "@/lib/timer-store";
 import { toast } from "sonner";
 import { Bell } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
+import { PushPrompt } from "./push-prompt";
 
 // Alarm sound using Web Audio API
 const playAlarm = () => {
@@ -41,17 +42,18 @@ const playAlarm = () => {
 	}
 };
 
-const sendNotification = (title: string, body: string, recipeId?: string) => {
+const sendNotification = async (title: string, body: string, recipeId?: string) => {
 	if (!("Notification" in window)) return;
 
 	if (Notification.permission === "granted") {
-		const notification = new Notification(title, { body, icon: "/logo192.png" });
+		const notification = new Notification(title, { body, icon: "/pwa-192x192.png" });
 		notification.onclick = () => {
 			window.focus();
 			if (recipeId) window.location.href = ROUTES.RECIPE_DETAIL(recipeId);
 		};
-	} else if (Notification.permission !== "denied") {
-		Notification.requestPermission();
+	} else if (Notification.permission === "default") {
+		// We don't request permission here as it's not a user-triggered event typically
+		// and it's handled by PushPrompt or SettingsPage
 	}
 };
 
@@ -138,6 +140,8 @@ export function AppLayout() {
 				<div className="md:hidden">
 					<MobileNav />
 				</div>
+
+				<PushPrompt />
 			</div>
 		</NuqsAdapter>
 	);

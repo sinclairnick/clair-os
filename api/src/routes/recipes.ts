@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { db } from '../db/index.js';
-import { recipes, recipeIngredients, ingredientGroups } from '../db/schema.js';
+import { db } from '../db/index.ts';
+import { recipes, recipeIngredients, ingredientGroups } from '../db/schema.ts';
 import { eq, and, or, gte, lte, ilike, sql, asc, desc, count, getTableColumns } from 'drizzle-orm';
 import {
 	requireAuth,
@@ -10,8 +10,8 @@ import {
 	requirePermission,
 	setupResourcePermissions,
 	type AuthUser
-} from '../auth/index.js';
-import type { Variables } from '../index.js';
+} from '../auth/index.ts';
+import type { Variables } from '../index.ts';
 
 export const recipesRouter = new Hono<{ Variables: Variables }>();
 

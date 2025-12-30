@@ -37,3 +37,38 @@ type task
     define can_edit: owner or assignee or can_edit from family
     define can_complete: assignee or can_edit from family
     define can_delete: owner or can_admin from family
+
+type reminder
+  relations
+    define family: [family]
+    define owner: [user]
+    define assignee: [user]
+    define can_view: can_view from family
+    define can_edit: owner or assignee or can_edit from family
+    define can_dismiss: assignee or can_edit
+    define can_delete: owner or can_admin from family
+
+type bill
+  relations
+    define family: [family]
+    define owner: [user]
+    define can_view: can_view from family
+    define can_edit: owner or can_edit from family
+    define can_pay: can_edit
+    define can_delete: owner or can_admin from family
+
+type meal
+  relations
+    define family: [family]
+    define owner: [user]
+    define can_view: can_view from family
+    define can_edit: owner or can_edit from family
+    define can_delete: owner or can_admin from family
+
+type calendar_event
+  relations
+    define family: [family]
+    define owner: [user]
+    define can_view: can_view from family
+    define can_edit: owner or can_edit from family
+    define can_delete: owner or can_admin from family

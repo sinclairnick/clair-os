@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { db } from '../db/index.js';
-import { shoppingLists, shoppingItems } from '../db/schema.js';
+import { db } from '../db/index.ts';
+import { shoppingLists, shoppingItems } from '../db/schema.ts';
 import { eq } from 'drizzle-orm';
 
 export const shoppingRouter = new Hono();

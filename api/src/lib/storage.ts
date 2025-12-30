@@ -1,5 +1,5 @@
 import * as Minio from "minio"
-import { Config } from "../config.js"
+import { Config } from "../config.ts"
 
 export const minioClient = new Minio.Client({
     endPoint: Config.MINIO_ENDPOINT,

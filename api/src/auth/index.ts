@@ -1,3 +1,3 @@
-export { auth } from '../auth.js';
-export * from './openfga.js';
-export * from './middleware.js';
+export { auth } from '../auth.ts';
+export * from './openfga.ts';
+export * from './middleware.ts';

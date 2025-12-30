@@ -1,19 +1,22 @@
-# Base stage for Bun
-FROM oven/bun:1-alpine AS base
+# Base stage for Node.js
+FROM node:25-alpine AS base
+
 WORKDIR /app
+
+# Enable corepack for pnpm
+RUN npm i -g pnpm
 
 # Builder stage for dependencies
 FROM base AS builder
 
 # Copy workspace config and lockfile
-COPY package.json bun.lock ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json ./packages/shared/
 COPY api/package.json ./api/
-COPY app/package.json ./app/
 
 # Install dependencies using filter to scope to api and shared
-RUN --mount=type=cache,id=bun,target=~/.bun/install/cache \
-    bun install --filter api --filter 'packages/*' --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --filter api --filter '@clairos/shared' --frozen-lockfile
 
 # Production API stage (used for both running the API and migrations)
 FROM base AS runner
@@ -35,7 +38,7 @@ WORKDIR /app/api
 EXPOSE 3001
 
 # Default command runs the API, but can be overridden for migrations
-CMD ["bun", "src/index.ts"]
+CMD ["pnpm", "start"]
 
 
 

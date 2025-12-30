@@ -1,2 +1,2 @@
 // Events barrel export
-export * from './domain-events.js';
+export * from './domain-events.ts';

@@ -249,6 +249,90 @@ export interface MemberProfileResponse {
 	upcomingEvents: CalendarEventResponse[];
 }
 
+export interface ReminderAssigneeResponse {
+	reminderId: string;
+	userId: string;
+	user: UserResponse;
+}
+
+export interface ReminderResponse {
+	id: string;
+	familyId: string;
+	title: string;
+	description?: string;
+	remindAt: string;
+	source: 'user' | 'recipe' | 'bill' | 'task';
+	sourceEntityType?: string;
+	sourceEntityId?: string;
+	recurrence?: {
+		frequency: 'daily' | 'weekly' | 'monthly';
+		interval: number;
+		daysOfWeek?: number[];
+		endDate?: string;
+	};
+	nextOccurrence?: string;
+	dismissed: boolean;
+	notifiedAt?: string;
+	createdById: string;
+	createdAt: string;
+	createdBy?: UserResponse;
+	assignees: ReminderAssigneeResponse[];
+}
+
+export interface ReminderCreateInput {
+	familyId: string;
+	title: string;
+	description?: string;
+	remindAt: string;
+	source?: 'user' | 'recipe' | 'bill' | 'task';
+	sourceEntityType?: string;
+	sourceEntityId?: string;
+	recurrence?: {
+		frequency: 'daily' | 'weekly' | 'monthly';
+		interval: number;
+		daysOfWeek?: number[];
+		endDate?: string;
+	};
+	assigneeIds?: string[];
+}
+
+export interface BillResponse {
+	id: string;
+	familyId: string;
+	name: string;
+	description?: string;
+	amount: number;
+	currency: string;
+	dueDate: string;
+	frequency: 'once' | 'weekly' | 'fortnightly' | 'monthly' | 'quarterly' | 'yearly';
+	recurrenceEndDate?: string;
+	status: 'upcoming' | 'paid' | 'overdue';
+	paidAt?: string;
+	paidById?: string;
+	reminderId?: string;
+	reminderDaysBefore: number;
+	createdById: string;
+	createdAt: string;
+	updatedAt: string;
+	createdBy?: UserResponse;
+	paidBy?: UserResponse;
+	reminder?: ReminderResponse;
+}
+
+export interface BillCreateInput {
+	familyId: string;
+	name: string;
+	description?: string;
+	amount: number;
+	currency?: string;
+	dueDate: string;
+	frequency?: 'once' | 'weekly' | 'fortnightly' | 'monthly' | 'quarterly' | 'yearly';
+	recurrenceEndDate?: string;
+	reminderDaysBefore?: number;
+	createReminder?: boolean;
+	reminderAssigneeIds?: string[];
+}
+
 // ─────────────────────────────────────────────────────────────
 // API methods
 // ─────────────────────────────────────────────────────────────
@@ -435,6 +519,52 @@ export const api = {
 				method: 'POST',
 				body: JSON.stringify({ endpoint }),
 			}),
+	},
+
+	// Reminders
+	reminders: {
+		list: (familyId: string, options: { source?: string; dismissed?: string; upcoming?: string } = {}) =>
+			apiFetch<ReminderResponse[]>('/reminders', { params: { familyId, ...options } }),
+		get: (id: string) => apiFetch<ReminderResponse>(`/reminders/${id}`),
+		create: (data: ReminderCreateInput) =>
+			apiFetch<ReminderResponse>('/reminders', {
+				method: 'POST',
+				body: JSON.stringify(data),
+			}),
+		update: (id: string, data: Partial<ReminderCreateInput>) =>
+			apiFetch<ReminderResponse>(`/reminders/${id}`, {
+				method: 'PATCH',
+				body: JSON.stringify(data),
+			}),
+		dismiss: (id: string) =>
+			apiFetch<ReminderResponse>(`/reminders/${id}/dismiss`, { method: 'POST' }),
+		undismiss: (id: string) =>
+			apiFetch<ReminderResponse>(`/reminders/${id}/undismiss`, { method: 'POST' }),
+		delete: (id: string) =>
+			apiFetch<{ success: boolean }>(`/reminders/${id}`, { method: 'DELETE' }),
+	},
+
+	// Bills
+	bills: {
+		list: (familyId: string, options: { status?: string; frequency?: string } = {}) =>
+			apiFetch<BillResponse[]>('/bills', { params: { familyId, ...options } }),
+		get: (id: string) => apiFetch<BillResponse>(`/bills/${id}`),
+		create: (data: BillCreateInput) =>
+			apiFetch<BillResponse>('/bills', {
+				method: 'POST',
+				body: JSON.stringify(data),
+			}),
+		update: (id: string, data: Partial<BillCreateInput>) =>
+			apiFetch<BillResponse>(`/bills/${id}`, {
+				method: 'PATCH',
+				body: JSON.stringify(data),
+			}),
+		pay: (id: string) =>
+			apiFetch<BillResponse>(`/bills/${id}/pay`, { method: 'POST' }),
+		unpay: (id: string) =>
+			apiFetch<BillResponse>(`/bills/${id}/unpay`, { method: 'POST' }),
+		delete: (id: string) =>
+			apiFetch<{ success: boolean }>(`/bills/${id}`, { method: 'DELETE' }),
 	},
 };
 

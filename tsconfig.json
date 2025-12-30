@@ -13,7 +13,8 @@
     "noEmit": true,
     "declaration": true,
     "declarationMap": true,
-    "composite": true
+    "composite": true,
+		"erasableSyntaxOnly": true
   },
   "exclude": ["node_modules", "dist"]
 }

@@ -260,15 +260,60 @@ export const reminders = pgTable('reminders', {
 	title: text('title').notNull(),
 	description: text('description'),
 	remindAt: timestamp('remind_at').notNull(),
-	linkedEntityType: text('linked_entity_type'),
-	linkedEntityId: uuid('linked_entity_id'),
-	createdById: text('created_by_id').references(() => users.id),
+	// Ownership - 'user' means standalone, others are resource-owned
+	source: text('source').notNull().default('user'), // 'user' | 'recipe' | 'bill' | 'task'
+	sourceEntityType: text('source_entity_type'),
+	sourceEntityId: uuid('source_entity_id'),
+	// Recurrence
+	recurrence: jsonb('recurrence'), // RecurrenceRule object
+	nextOccurrence: timestamp('next_occurrence'),
+	// Status
 	dismissed: boolean('dismissed').notNull().default(false),
+	notifiedAt: timestamp('notified_at'),
+	// Audit
+	createdById: text('created_by_id').references(() => users.id),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => [
 	index('reminders_family_id_idx').on(table.familyId),
 	index('reminders_remind_at_idx').on(table.remindAt),
 	index('reminders_dismissed_idx').on(table.dismissed),
+	index('reminders_source_entity_idx').on(table.sourceEntityType, table.sourceEntityId),
+]);
+
+// Junction table for reminder assignees (who gets notified)
+export const reminderAssignees = pgTable('reminder_assignees', {
+	reminderId: uuid('reminder_id').notNull().references(() => reminders.id, { onDelete: 'cascade' }),
+	userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+}, (table) => [
+	primaryKey({ columns: [table.reminderId, table.userId] }),
+]);
+
+// ─────────────────────────────────────────────────────────────
+// Bills / Expenses
+// ─────────────────────────────────────────────────────────────
+
+export const bills = pgTable('bills', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	familyId: uuid('family_id').notNull().references(() => families.id, { onDelete: 'cascade' }),
+	name: text('name').notNull(),
+	description: text('description'),
+	amount: doublePrecision('amount').notNull(),
+	currency: text('currency').notNull().default('NZD'),
+	dueDate: timestamp('due_date').notNull(),
+	frequency: text('frequency').notNull().default('once'), // 'once' | 'weekly' | 'fortnightly' | 'monthly' | 'quarterly' | 'yearly'
+	recurrenceEndDate: timestamp('recurrence_end_date'),
+	status: text('status').notNull().default('upcoming'), // 'upcoming' | 'paid' | 'overdue'
+	paidAt: timestamp('paid_at'),
+	paidById: text('paid_by_id').references(() => users.id),
+	reminderId: uuid('reminder_id').references(() => reminders.id, { onDelete: 'set null' }),
+	reminderDaysBefore: integer('reminder_days_before').notNull().default(3),
+	createdById: text('created_by_id').references(() => users.id),
+	createdAt: timestamp('created_at').notNull().defaultNow(),
+	updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+	index('bills_family_id_idx').on(table.familyId),
+	index('bills_due_date_idx').on(table.dueDate),
+	index('bills_status_idx').on(table.status),
 ]);
 
 // ─────────────────────────────────────────────────────────────
@@ -326,6 +371,7 @@ export const familiesRelations = relations(families, ({ many }) => ({
 	meals: many(meals),
 	calendarEvents: many(calendarEvents),
 	reminders: many(reminders),
+	bills: many(bills),
 }));
 
 export const familyInvitesRelations = relations(familyInvites, ({ one }) => ({
@@ -440,5 +486,47 @@ export const pushSubscriptionsRelations = relations(pushSubscriptions, ({ one })
 	user: one(users, {
 		fields: [pushSubscriptions.userId],
 		references: [users.id],
+	}),
+}));
+
+export const remindersRelations = relations(reminders, ({ one, many }) => ({
+	family: one(families, {
+		fields: [reminders.familyId],
+		references: [families.id],
+	}),
+	createdBy: one(users, {
+		fields: [reminders.createdById],
+		references: [users.id],
+	}),
+	assignees: many(reminderAssignees),
+}));
+
+export const reminderAssigneesRelations = relations(reminderAssignees, ({ one }) => ({
+	reminder: one(reminders, {
+		fields: [reminderAssignees.reminderId],
+		references: [reminders.id],
+	}),
+	user: one(users, {
+		fields: [reminderAssignees.userId],
+		references: [users.id],
+	}),
+}));
+
+export const billsRelations = relations(bills, ({ one }) => ({
+	family: one(families, {
+		fields: [bills.familyId],
+		references: [families.id],
+	}),
+	createdBy: one(users, {
+		fields: [bills.createdById],
+		references: [users.id],
+	}),
+	paidBy: one(users, {
+		fields: [bills.paidById],
+		references: [users.id],
+	}),
+	reminder: one(reminders, {
+		fields: [bills.reminderId],
+		references: [reminders.id],
 	}),
 }));

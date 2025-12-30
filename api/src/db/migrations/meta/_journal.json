@@ -43,6 +43,13 @@
       "when": 1767081192431,
       "tag": "0005_many_freak",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1767086767758,
+      "tag": "0006_wooden_goliath",
+      "breakpoints": true
     }
   ]
 }

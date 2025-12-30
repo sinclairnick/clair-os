@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { db } from '../db/index.js';
-import { families, familyMembers, familyInvites, tasks, recipes, calendarEvents } from '../db/schema.js';
+import { db } from '../db/index.ts';
+import { families, familyMembers, familyInvites, tasks, recipes, calendarEvents } from '../db/schema.ts';
 import { eq, and, gte, ne, count } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import {
@@ -10,8 +10,8 @@ import {
 	requireFamilyMember,
 	requireFamilyAdmin,
 	grantRelation,
-} from '../auth/index.js';
-import type { Variables } from '../index.js';
+} from '../auth/index.ts';
+import type { Variables } from '../index.ts';
 
 export const familiesRouter = new Hono<{ Variables: Variables }>();
 

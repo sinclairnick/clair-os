@@ -16,6 +16,8 @@ export const ROUTES = {
 	SETTINGS: '/settings',
 	FAMILY_SETTINGS: '/family-settings',
 	MEMBER_PROFILE: (userId: string) => `/family-settings/members/${userId}`,
+	REMINDERS: '/reminders',
+	BILLS: '/bills',
 } as const;
 
 // Patterns for React Router matching

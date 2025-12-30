@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 import webpush from 'web-push';
-import { db } from '../db/index.js';
-import { pushSubscriptions } from '../db/schema.js';
+import { db } from '../db/index.ts';
+import { pushSubscriptions } from '../db/schema.ts';
 import { eq, and } from 'drizzle-orm';
-import { Config } from '../config.js';
+import { Config } from '../config.ts';
 
 const pushRouter = new Hono<{ Variables: { user: { id: string } } }>();
 

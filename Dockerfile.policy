@@ -17,4 +17,4 @@ RUN chmod +x ./migrate-policy.sh
 # Set default env var for model file (script expects this or defaults to ./model.fga)
 ENV MODEL_FILE=/app/model.fga
 
-ENTRYPOINT ["./migrate-policy.sh"]
+CMD ["./migrate-policy.sh"]

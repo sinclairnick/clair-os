@@ -1,21 +1,24 @@
 {
   "name": "api",
   "type": "module",
+  "packageManager": "pnpm@10.26.2",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
+    "dev": "node --watch src/index.ts",
     "build": "tsc",
-    "start": "bun src/index.ts",
+    "start": "node src/index.ts",
+    "jobs:start": "node src/jobs/worker.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "vapid:generate": "bun -e \"import webpush from 'web-push'; console.log(webpush.generateVAPIDKeys())\""
+    "vapid:generate": "node -e \"import webpush from 'web-push'; console.log(webpush.generateVAPIDKeys())\""
   },
   "dependencies": {
     "@clairos/shared": "workspace:*",
     "@hono/node-server": "^1.13.8",
     "@hono/zod-validator": "^0.7.6",
     "@openfga/sdk": "^0.8.0",
+    "@sidequest/postgres-backend": "^1.13.1",
     "better-auth": "^1.4.9",
     "drizzle-kit": "^0.31.8",
     "drizzle-orm": "^0.45.1",
@@ -30,7 +33,10 @@
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/web-push": "^3.6.4",
-    "tsx": "^4.19.2",
+    "tsx": "^4.21.0",
     "typescript": "~5.9.3"
+  },
+  "volta": {
+    "node": "23.11.1"
   }
 }
