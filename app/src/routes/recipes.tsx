@@ -41,6 +41,7 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PageTitle } from "@/components/page-title";
+import { LazyImage } from "@/components/ui/lazy-image";
 
 export function RecipesPage() {
 	const navigate = useNavigate();
@@ -488,14 +489,12 @@ export function RecipesPage() {
 							)}
 
 							{recipe.imageUrl && (
-								<div className="aspect-video w-full overflow-hidden rounded-t-lg">
-									<img
-										src={recipe.imageUrl}
-										alt={recipe.title}
-										loading="lazy"
-										className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-									/>
-								</div>
+								<LazyImage
+									src={recipe.imageUrl}
+									alt={recipe.title}
+									containerClassName="aspect-video w-full rounded-t-lg"
+									imageClassName="group-hover:scale-105 transition-transform"
+								/>
 							)}
 							<CardHeader className="pb-2">
 								<CardTitle className="text-lg">{recipe.title}</CardTitle>
