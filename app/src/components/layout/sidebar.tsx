@@ -1,11 +1,10 @@
-import { NavLink, Link } from "react-router";
+import { NavLink, Link, useNavigate } from "react-router";
 import {
 	Home,
 	CookingPot,
 	ShoppingCart,
 	CheckSquare,
 	Calendar,
-	Settings,
 	LogOut,
 	ChevronDown,
 	Clock,
@@ -15,6 +14,8 @@ import {
 	X,
 	ExternalLink,
 	BookOpen,
+	Users,
+	User,
 	ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
+	DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useTimerStore } from "@/lib/timer-store";
 import { useWatchedRecipesStore } from "@/lib/watched-recipes-store";
@@ -37,9 +39,11 @@ const navItems = [
 	{ to: ROUTES.SHOPPING, label: "Shopping", icon: ShoppingCart },
 	{ to: ROUTES.TASKS, label: "Tasks", icon: CheckSquare },
 	{ to: ROUTES.CALENDAR, label: "Calendar", icon: Calendar },
+	{ to: ROUTES.FAMILY_SETTINGS, label: "Family Settings", icon: Users },
 ];
 
 export function Sidebar() {
+	const navigate = useNavigate();
 	const { user, families, currentFamily, setCurrentFamilyId, signOut } = useAuth();
 	const { timers, startTimer, pauseTimer, resetTimer, removeTimer } = useTimerStore();
 
@@ -243,51 +247,43 @@ export function Sidebar() {
 				)}
 			</nav>
 
-			{/* Bottom section: Settings & User */}
-			<div className="px-3 py-4 border-t border-sidebar-border space-y-2">
-				<NavLink
-					to={ROUTES.SETTINGS}
-					className={({ isActive }) =>
-						cn(
-							"flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-							isActive
-								? "bg-sidebar-primary text-sidebar-primary-foreground"
-								: "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-						)
-					}
-				>
-					<Settings className="w-5 h-5" />
-					Settings
-				</NavLink>
-
+			{/* Bottom section: User Account */}
+			<div className="px-3 py-4 border-t border-sidebar-border">
 				{user && (
-					<div className="flex items-center gap-3 px-3 py-2">
-						{user.image ? (
-							<img
-								src={user.image}
-								alt={user.name}
-								loading="lazy"
-								className="w-8 h-8 rounded-full"
-							/>
-						) : (
-							<div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium">
-								{user.name.charAt(0).toUpperCase()}
-							</div>
-						)}
-						<div className="flex-1 min-w-0">
-							<p className="text-sm font-medium truncate text-sidebar-foreground">{user.name}</p>
-							<p className="text-xs text-sidebar-foreground/50 truncate">{user.email}</p>
-						</div>
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={signOut}
-							className="shrink-0 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-							title="Sign out"
-						>
-							<LogOut className="w-4 h-4" />
-						</Button>
-					</div>
+					<DropdownMenu>
+						<DropdownMenuTrigger render={
+							<button className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors text-left group">
+								{user.image ? (
+									<img
+										src={user.image}
+										alt={user.name}
+										loading="lazy"
+										className="w-8 h-8 rounded-full"
+									/>
+								) : (
+									<div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium">
+										{user.name.charAt(0).toUpperCase()}
+									</div>
+								)}
+								<div className="flex-1 min-w-0">
+									<p className="text-sm font-medium truncate text-sidebar-foreground group-hover:text-sidebar-accent-foreground">{user.name}</p>
+									<p className="text-xs text-sidebar-foreground/50 truncate group-hover:text-sidebar-accent-foreground/70">{user.email}</p>
+								</div>
+								<ChevronDown className="w-4 h-4 text-sidebar-foreground/30 group-hover:text-sidebar-foreground/50 transition-colors" />
+							</button>
+						} />
+						<DropdownMenuContent align="end" side="right" className="w-56 mb-2">
+							<DropdownMenuItem onClick={() => navigate(ROUTES.SETTINGS)}>
+								<User className="w-4 h-4 mr-2" />
+								Personal Settings
+							</DropdownMenuItem>
+							<DropdownMenuSeparator />
+							<DropdownMenuItem variant="destructive" onClick={signOut}>
+								<LogOut className="w-4 h-4 mr-2" />
+								Sign Out
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
 				)}
 			</div>
 		</div>

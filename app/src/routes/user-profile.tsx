@@ -67,7 +67,7 @@ export function UserProfilePage() {
 		return (
 			<div className="flex flex-col items-center justify-center h-64 gap-4">
 				<p className="text-muted-foreground">Could not load profile</p>
-				<Link to={ROUTES.FAMILY_MANAGE}>
+				<Link to={ROUTES.FAMILY_SETTINGS}>
 					<Button variant="outline">
 						<ArrowLeft className="w-4 h-4 mr-2" />
 						Back to Family
@@ -84,7 +84,7 @@ export function UserProfilePage() {
 			<PageTitle title={`${member.displayName}'s Profile`} />
 			{/* Back Button + Header */}
 			<div className="flex items-start gap-4">
-				<Link to={ROUTES.FAMILY_MANAGE}>
+				<Link to={ROUTES.FAMILY_SETTINGS}>
 					<Button variant="ghost" size="icon" className="shrink-0 mt-1">
 						<ArrowLeft className="w-5 h-5" />
 					</Button>

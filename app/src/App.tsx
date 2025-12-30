@@ -38,7 +38,7 @@ export function App() {
 						<Route path={ROUTES.TASKS} element={<TasksPage />} />
 						<Route path={ROUTES.CALENDAR} element={<CalendarPage />} />
 						<Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
-						<Route path={ROUTES.FAMILY_MANAGE} element={<FamilyManagePage />} />
+						<Route path={ROUTES.FAMILY_SETTINGS} element={<FamilyManagePage />} />
 						<Route path={ROUTE_PATTERNS.MEMBER_PROFILE} element={<UserProfilePage />} />
 					</Route>
 				</Route>
