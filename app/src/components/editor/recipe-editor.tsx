@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef, useImperativeHandle, useState, useMemo, useCallback } from 'react';
-import { Clock, Utensils } from 'lucide-react';
+import { Utensils } from 'lucide-react';
 import { BlockNoteSchema, defaultInlineContentSpecs } from '@blocknote/core';
 import { useCreateBlockNote, SuggestionMenuController } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/shadcn';

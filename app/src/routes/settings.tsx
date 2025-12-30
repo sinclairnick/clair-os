@@ -132,7 +132,7 @@ export function SettingsPage() {
 				</CardContent>
 			</Card>
 
-			<Link to={ROUTES.FAMILY_MANAGE} className="block">
+			<Link to={ROUTES.FAMILY_SETTINGS} className="block">
 				<Card className="cursor-pointer hover:border-primary transition-colors group">
 					<CardContent className="flex items-center gap-4 p-4">
 						<div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
