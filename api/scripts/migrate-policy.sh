@@ -27,6 +27,35 @@ else
     echo "Found existing OpenFGA store: $STORE_ID"
 fi
 
-echo "Writing authorization model from $MODEL_FILE..."
-fga model write --store-id "$STORE_ID" --file "$MODEL_FILE" --api-url "$FGA_API_URL"
-echo "Model updated."
+# Check if model needs update
+echo "Checking if authorization model needs update..."
+
+# Get the latest model ID
+LATEST_MODEL_JSON=$(fga model list --store-id "$STORE_ID" --api-url "$FGA_API_URL" --max-pages 1)
+
+SHOULD_WRITE=true
+
+if [ -n "$LATEST_MODEL_ID" ]; then
+    echo "Found latest model ID: $LATEST_MODEL_ID"
+    
+    # Get remote model JSON
+    REMOTE_MODEL_RAW=$(fga model get --store-id "$STORE_ID" --model-id "$LATEST_MODEL_ID" --api-url "$FGA_API_URL" --format "fga")
+    
+    # Transform local model to JSON
+    LOCAL_MODEL_RAW=$(fga model transform --file "$MODEL_FILE" --output-format "fga")
+    
+    if [ "$REMOTE_MODEL" = "$LOCAL_MODEL" ]; then
+        echo "Authorization model is up to date."
+        SHOULD_WRITE=false
+    else
+        echo "Authorization model hash mismatch. Updating..."
+    fi
+else
+    echo "No existing authorization model found."
+fi
+
+if [ "$SHOULD_WRITE" = true ]; then
+    echo "Writing authorization model from $MODEL_FILE..."
+    fga model write --store-id "$STORE_ID" --file "$MODEL_FILE" --api-url "$FGA_API_URL"
+    echo "Model updated."
+fi
