@@ -8,6 +8,7 @@ import { tasksRouter } from './routes/tasks.js';
 import { familiesRouter } from './routes/families.js';
 import { db } from './db/index.js';
 import { sql } from 'drizzle-orm';
+import { pushRouter } from './routes/push.js';
 
 // Define custom context variables
 type Variables = {
@@ -65,6 +66,7 @@ app.route('/api/shopping', shoppingRouter);
 app.route('/api/tasks', tasksRouter);
 import { storageRouter } from './routes/storage.js';
 app.route('/api/storage', storageRouter);
+app.route('/api/push', pushRouter);
 
 const port = parseInt(process.env.PORT || '3001', 10);
 console.log(`🚀 ClairOS API running on http://localhost:${port}`);

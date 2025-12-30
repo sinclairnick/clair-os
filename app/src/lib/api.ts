@@ -422,6 +422,20 @@ export const api = {
 			});
 		},
 	},
+	// Push Notifications
+	push: {
+		getPublicKey: () => apiFetch<{ publicKey: string }>('/push/key'),
+		subscribe: (subscription: any) =>
+			apiFetch<{ success: boolean }>('/push/subscribe', {
+				method: 'POST',
+				body: JSON.stringify(subscription),
+			}),
+		unsubscribe: (endpoint: string) =>
+			apiFetch<{ success: boolean }>('/push/unsubscribe', {
+				method: 'POST',
+				body: JSON.stringify({ endpoint }),
+			}),
+	},
 };
 
 export { ApiError };

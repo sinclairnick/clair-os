@@ -3,13 +3,53 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/components/auth-provider";
-import { Sun, Moon, Monitor, Users, ChevronRight } from "lucide-react";
+import { Sun, Moon, Monitor, Users, ChevronRight, Bell, BellOff, Loader2 } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
 import { PageTitle } from "@/components/page-title";
+import { useState, useEffect } from "react";
+import { pushManager } from "@/lib/push-manager";
+import { toast } from "sonner";
 
 export function SettingsPage() {
 	const { theme, setTheme } = useTheme();
 	const { currentFamily } = useAuth();
+
+	const [isPushSupported, setIsPushSupported] = useState(false);
+	const [isSubscribed, setIsSubscribed] = useState(false);
+	const [isPushLoading, setIsPushLoading] = useState(true);
+
+	useEffect(() => {
+		const checkPushStatus = async () => {
+			const supported = await pushManager.isSupported();
+			setIsPushSupported(supported);
+
+			if (supported) {
+				const subscription = await pushManager.getSubscription();
+				setIsSubscribed(!!subscription);
+			}
+			setIsPushLoading(false);
+		};
+		checkPushStatus();
+	}, []);
+
+	const handleTogglePush = async () => {
+		setIsPushLoading(true);
+		try {
+			if (isSubscribed) {
+				await pushManager.unsubscribe();
+				setIsSubscribed(false);
+				toast.success("Notifications disabled");
+			} else {
+				await pushManager.subscribe();
+				setIsSubscribed(true);
+				toast.success("Notifications enabled!");
+			}
+		} catch (error: any) {
+			toast.error(error.message || "Failed to update notification settings");
+		} finally {
+			setIsPushLoading(false);
+		}
+	};
 
 	return (
 		<div className="space-y-6">
@@ -55,6 +95,40 @@ export function SettingsPage() {
 							System
 						</Button>
 					</div>
+				</CardContent>
+			</Card>
+
+			{/* Notifications Section */}
+			<Card>
+				<CardHeader>
+					<CardTitle>Notifications</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<p className="text-sm text-muted-foreground">
+						Receive alerts for upcoming events and shared tasks
+					</p>
+					{!isPushSupported ? (
+						<div className="flex items-center gap-2 p-3 rounded-lg bg-secondary/50 text-muted-foreground text-sm">
+							<BellOff className="w-4 h-4" />
+							Push notifications are not supported on this browser or device.
+						</div>
+					) : (
+						<Button
+							variant={isSubscribed ? "default" : "outline"}
+							size="sm"
+							onClick={handleTogglePush}
+							disabled={isPushLoading}
+						>
+							{isPushLoading ? (
+								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+							) : isSubscribed ? (
+								<Bell className="w-4 h-4 mr-2" />
+							) : (
+								<BellOff className="w-4 h-4 mr-2" />
+							)}
+							{isSubscribed ? "Enabled" : "Disabled"}
+						</Button>
+					)}
 				</CardContent>
 			</Card>
 

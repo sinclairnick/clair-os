@@ -15,6 +15,9 @@ const configSchema = z.object({
 	MINIO_USE_SSL: z.string().default("false").transform((v) => v === "true"),
 	MINIO_BUCKET: z.string().default("clairos"),
 	MINIO_PUBLIC_URL: z.string().default("http://localhost:9000"),
+	VAPID_PUBLIC_KEY: z.string(),
+	VAPID_PRIVATE_KEY: z.string(),
+	VAPID_SUBJECT: z.string().default("mailto:admin@sinclairs.app"),
 })
 
 export const Config = configSchema.parse({
@@ -32,4 +35,7 @@ export const Config = configSchema.parse({
 	MINIO_USE_SSL: process.env.MINIO_USE_SSL,
 	MINIO_BUCKET: process.env.MINIO_BUCKET,
 	MINIO_PUBLIC_URL: process.env.MINIO_PUBLIC_URL,
+	VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
+	VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
+	VAPID_SUBJECT: process.env.VAPID_SUBJECT,
 })

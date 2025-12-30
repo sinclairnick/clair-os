@@ -10,6 +10,9 @@ export default defineConfig({
 		react(),
 		tailwindcss(),
 		VitePWA({
+			strategies: "injectManifest",
+			srcDir: "src",
+			filename: "sw.ts",
 			registerType: "autoUpdate",
 			includeAssets: ["favicon.ico", "apple-touch-icon.png"],
 			manifest: {
@@ -41,29 +44,13 @@ export default defineConfig({
 					},
 				],
 			},
-			workbox: {
+			injectManifest: {
 				globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
 				maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-				navigateFallbackDenylist: [/^\/api/, /^\/static/],
-				runtimeCaching: [
-					{
-						urlPattern: /^https?:\/\/.*\/api\//i,
-						handler: "NetworkFirst",
-						options: {
-							cacheName: "api-cache",
-							expiration: {
-								maxEntries: 100,
-								maxAgeSeconds: 60 * 60 * 24, // 24 hours
-							},
-							cacheableResponse: {
-								statuses: [0, 200],
-							},
-						},
-					},
-				],
 			},
 			devOptions: {
 				enabled: true,
+				type: "module",
 			},
 		}),
 	],

@@ -23,10 +23,12 @@
     "nanoid": "^5.1.6",
     "postgres": "^3.4.5",
     "sidequest": "^1.0.6",
+    "web-push": "^3.6.7",
     "zod": "^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "@types/web-push": "^3.6.4",
     "tsx": "^4.19.2",
     "typescript": "~5.9.3"
   }

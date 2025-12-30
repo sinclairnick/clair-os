@@ -272,6 +272,23 @@ export const reminders = pgTable('reminders', {
 ]);
 
 // ─────────────────────────────────────────────────────────────
+// Push Notifications
+// ─────────────────────────────────────────────────────────────
+
+export const pushSubscriptions = pgTable('push_subscriptions', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	endpoint: text('endpoint').notNull().unique(),
+	p256dh: text('p256dh').notNull(),
+	auth: text('auth').notNull(),
+	userAgent: text('user_agent'),
+	createdAt: timestamp('created_at').notNull().defaultNow(),
+	updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+	index('push_subscriptions_user_id_idx').on(table.userId),
+]);
+
+// ─────────────────────────────────────────────────────────────
 // Entity Links (for cross-referencing)
 // ─────────────────────────────────────────────────────────────
 
@@ -297,6 +314,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 	sessions: many(sessions),
 	accounts: many(accounts),
 	familyMemberships: many(familyMembers),
+	pushSubscriptions: many(pushSubscriptions),
 }));
 
 export const familiesRelations = relations(families, ({ many }) => ({
@@ -415,5 +433,12 @@ export const mealsRelations = relations(meals, ({ one }) => ({
 	recipe: one(recipes, {
 		fields: [meals.recipeId],
 		references: [recipes.id],
+	}),
+}));
+
+export const pushSubscriptionsRelations = relations(pushSubscriptions, ({ one }) => ({
+	user: one(users, {
+		fields: [pushSubscriptions.userId],
+		references: [users.id],
 	}),
 }));

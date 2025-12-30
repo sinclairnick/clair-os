@@ -54,7 +54,8 @@ export function Sidebar() {
 		<div className="flex flex-col h-full bg-sidebar">
 			{/* Logo & Family Selector */}
 			<div className="p-4 border-b border-sidebar-border">
-				<div className="flex items-center justify-between mb-3">
+				<div className="flex items-center gap-2 mb-3">
+					<img src="/icon-raw.png" alt="ClairOS Logo" className="w-16 h-16 object-contain" />
 					<span className="text-xl font-semibold text-sidebar-foreground">
 						ClairOS
 					</span>
@@ -62,7 +63,7 @@ export function Sidebar() {
 
 				{families.length > 0 && (
 					<DropdownMenu>
-						<DropdownMenuTrigger>
+						<DropdownMenuTrigger render={
 							<Button
 								variant="outline"
 								className="w-full justify-between text-sm bg-background/50"
@@ -71,7 +72,7 @@ export function Sidebar() {
 								<span className="truncate">{currentFamily?.name || 'Select Family'}</span>
 								<ChevronDown className="w-4 h-4 ml-2 shrink-0 opacity-50" />
 							</Button>
-						</DropdownMenuTrigger>
+						} />
 						<DropdownMenuContent align="start" className="w-56">
 							{families.map((family) => (
 								<DropdownMenuItem

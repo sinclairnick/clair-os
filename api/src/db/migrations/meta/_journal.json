@@ -36,6 +36,13 @@
       "when": 1766842886086,
       "tag": "0004_add-ingredient-groups",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1767081192431,
+      "tag": "0005_many_freak",
+      "breakpoints": true
     }
   ]
 }
