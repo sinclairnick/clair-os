@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:${POSTGRES_VERSION:-16-alpine}
     environment:
       POSTGRES_USER: clairos
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -15,7 +15,7 @@ services:
     restart: on-failure
 
   openfga:
-    image: openfga/openfga:latest
+    image: openfga/openfga:${OPENFGA_VERSION:-latest}
     command: run
     environment:
       OPENFGA_DATASTORE_ENGINE: postgres
@@ -29,7 +29,7 @@ services:
     restart: on-failure
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:${MINIO_VERSION:-latest}
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
@@ -47,7 +47,7 @@ services:
 
   # Drizzle migrations
   migrations:
-    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
+    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:${IMAGE_TAG:-latest}
     command: pnpm db:migrate
     environment:
       DATABASE_URL: postgres://clairos:${DB_PASSWORD}@db:5432/clairos
@@ -57,7 +57,7 @@ services:
 
   # OpenFGA migrations
   openfga-migrate:
-    image: openfga/openfga:latest
+    image: openfga/openfga:${OPENFGA_VERSION:-latest}
     command: migrate
     environment:
       OPENFGA_DATASTORE_ENGINE: postgres
@@ -68,7 +68,7 @@ services:
 
   # OpenFGA policy migration - runs on startup to update authorization model
   policy-migrate:
-    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
+    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:${IMAGE_TAG:-latest}
     command: sh scripts/migrate-policy.sh
     environment:
       OPENFGA_API_URL: http://openfga:8080
@@ -80,7 +80,7 @@ services:
         condition: service_started
 
   api:
-    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
+    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:${IMAGE_TAG:-latest}
     environment:
       DATABASE_URL: postgres://clairos:${DB_PASSWORD}@db:5432/clairos
       DB_PASSWORD: ${DB_PASSWORD}
@@ -119,7 +119,7 @@ services:
     restart: always
 
   jobs:
-    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:latest
+    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/api:${IMAGE_TAG:-latest}
     command: pnpm jobs:start
     environment:
       DATABASE_URL: postgres://clairos:${DB_PASSWORD}@db:5432/clairos
@@ -152,7 +152,7 @@ services:
     restart: always
 
   app:
-    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/app:latest
+    image: ${IMAGE_REGISTRY}/${IMAGE_REPO}/app:${IMAGE_TAG:-latest}
     ports:
       - "80:80"
     depends_on:
@@ -162,7 +162,7 @@ services:
 
   # PostgreSQL backups - daily with retention
   postgres-backup:
-    image: prodrigestivill/postgres-backup-local:latest
+    image: prodrigestivill/postgres-backup-local:${POSTGRES_BACKUP_VERSION:-latest}
     environment:
       POSTGRES_HOST: db
       POSTGRES_DB: clairos
@@ -182,7 +182,7 @@ services:
 
   # Minio backups - syncs bucket daily
   minio-backup:
-    image: minio/mc:latest
+    image: minio/mc:${MINIO_MC_VERSION:-latest}
     entrypoint: /bin/sh
     command: >
       -c "
