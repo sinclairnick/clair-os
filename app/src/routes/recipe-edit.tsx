@@ -591,14 +591,14 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 
 			// Check if we already have this ingredient in the form OR added in this cycle
 			const alreadyExists = currentIngredients.some(
-				(ing: any) => (ing.id && mentioned.id && ing.id === mentioned.id) ||
-					(ing.name.trim().toLowerCase() === normalizedName)
-			) || addedInThisCycle.has(normalizedName);
+				(ing: any) => ing.id === mentioned.id
+			) || addedInThisCycle.has(mentioned.id || normalizedName);
 
 			if (!alreadyExists) {
-				addedInThisCycle.add(normalizedName);
+				const id = mentioned.id || crypto.randomUUID();
+				addedInThisCycle.add(id);
 				appendIngredient({
-					id: mentioned.id || crypto.randomUUID(),
+					id: id,
 					name: mentioned.name.trim(),
 					quantity: mentioned.quantity ? mentioned.quantity.toString() : "",
 					unit: mentioned.unit || "",

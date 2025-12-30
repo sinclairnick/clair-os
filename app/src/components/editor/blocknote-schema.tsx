@@ -64,7 +64,9 @@ export const IngredientMention = createReactInlineContentSpec(
 					</TooltipTrigger>
 					<TooltipContent>
 						<p className="font-medium capitalize">
-							{quantity} {unit} {label}
+							{quantity && <span>{quantity} </span>}
+							{unit && <span>{unit} </span>}
+							{label}
 						</p>
 					</TooltipContent>
 				</Tooltip>
@@ -95,6 +97,11 @@ export const TimerMention = createReactInlineContentSpec(
 
 			// We need to cast because we added custom props that typescript might not know about in the default types immediately
 			const { duration, durationMs, id: propId, recipeId } = inlineContent.props as any;
+
+			// Rules of Hooks: Always call hooks at the top level
+			const timerState = useTimerStore((state) => state.timers[propId]);
+			const { startTimer, pauseTimer, resetTimer, addTimer } = useTimerStore();
+
 			const ms = durationMs;
 			const formatted = formatDuration(ms);
 
@@ -111,10 +118,6 @@ export const TimerMention = createReactInlineContentSpec(
 					</button>
 				);
 			}
-
-
-			const timerState = useTimerStore((state) => state.timers[propId]);
-			const { startTimer, pauseTimer, resetTimer, addTimer } = useTimerStore();
 
 			const isRunning = timerState?.status === 'running';
 			const isPaused = timerState?.status === 'paused';
@@ -244,31 +247,6 @@ export const TimerMention = createReactInlineContentSpec(
 				</HoverCard>
 			);
 		},
-	}
-);
-
-// ─────────────────────────────────────────────────────────────
-// Recipe Mention - @recipe (future-proofing)
-// ─────────────────────────────────────────────────────────────
-
-export const RecipeMention = createReactInlineContentSpec(
-	{
-		type: 'recipeMention',
-		propSchema: {
-			id: { default: '' },
-			title: { default: '' },
-		},
-		content: 'none',
-	} as const,
-	{
-		render: ({ inlineContent }) => (
-			<span
-				className="inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-secondary text-secondary-foreground font-medium text-sm"
-				data-recipe={inlineContent.props.id}
-			>
-				📖 {inlineContent.props.title}
-			</span>
-		),
 	}
 );
 

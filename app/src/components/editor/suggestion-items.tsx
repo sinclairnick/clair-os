@@ -20,11 +20,6 @@ export interface TimerMention {
 	durationMs: number;
 }
 
-export interface RecipeReference {
-	id: string;
-	title: string;
-}
-
 // Mention menu item types
 export type MentionItemType = 'ingredient' | 'recipe';
 
@@ -110,15 +105,16 @@ export function parseDurationWithChrono(text: string): number {
 
 export function getMentionItems(
 	query: string,
-	existingIngredients: IngredientMention[] = [],
-	_existingRecipes: RecipeReference[] = [] // Future use
+	existingIngredients: IngredientMention[] = []
 ): MentionItem[] {
-	const lowerQuery = query.toLowerCase();
+	const lowerQuery = query.toLowerCase().trim();
 	const results: MentionItem[] = [];
 
-	// Filter existing ingredients
-	const ingredientMatches = existingIngredients
-		.filter((item) => item.name.toLowerCase().includes(lowerQuery))
+	if (!lowerQuery) return [];
+
+	// 1. Find exact matches
+	const exactMatches = existingIngredients
+		.filter((item) => item.name.toLowerCase() === lowerQuery)
 		.map((item) => ({
 			type: 'ingredient' as const,
 			id: item.id,
@@ -128,29 +124,35 @@ export function getMentionItems(
 			unit: item.unit,
 		}));
 
-	results.push(...ingredientMatches);
+	// 2. Find fuzzy matches (excluding exact matches)
+	const fuzzyMatches = existingIngredients
+		.filter((item) =>
+			item.name.toLowerCase().includes(lowerQuery) &&
+			item.name.toLowerCase() !== lowerQuery
+		)
+		.map((item) => ({
+			type: 'ingredient' as const,
+			id: item.id,
+			name: item.name,
+			isNew: false,
+			quantity: item.quantity,
+			unit: item.unit,
+		}));
 
-	// TODO: Add recipe matches when implemented
-	// const recipeMatches = existingRecipes
-	//   .filter((item) => item.title.toLowerCase().includes(lowerQuery))
-	//   .map((item) => ({
-	//     type: 'recipe' as const,
-	//     id: item.id,
-	//     name: item.title,
-	//   }));
-	// results.push(...recipeMatches);
+	// Build result: [Exact Matches] -> [Create New] -> [Fuzzy Matches]
+	results.push(...exactMatches);
 
-	// Add "Create new ingredient" option if query doesn't match existing
-	if (query.trim() && !ingredientMatches.some((m) => m.name.toLowerCase() === lowerQuery)) {
-		results.unshift({
-			type: 'ingredient',
-			id: `new-${Date.now()}`,
-			name: query.trim(),
-			isNew: true,
-		});
-	}
+	// Always add "Create new ingredient" option
+	results.push({
+		type: 'ingredient',
+		id: `new-${Date.now()}`,
+		name: query.trim(),
+		isNew: true,
+	});
 
-	return results.slice(0, 10);
+	results.push(...fuzzyMatches);
+
+	return results.slice(0, 15);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -229,15 +231,29 @@ export function insertIngredientMention(
 	editor: any,
 	item: MentionItem
 ) {
+	let label = item.name;
+	let quantity = item.quantity ? item.quantity.toString() : '';
+	let unit = item.unit || '';
+
+	// Parse pattern "Name (Quantity Unit)" if it's a new ingredient
+	if (item.isNew) {
+		const match = item.name.match(/^(.+?)(?:\s+\(([\d.\/]+)\s*(.*?)\))?$/);
+		if (match && match[2]) {
+			label = match[1].trim();
+			quantity = match[2];
+			unit = match[3] ? match[3].trim() : '';
+		}
+	}
+
 	editor.insertInlineContent([
 		{
 			type: 'ingredientMention',
 			props: {
 				id: item.id,
-				label: item.name,
+				label: label,
 				isNew: item.isNew ?? false,
-				quantity: item.quantity ? item.quantity.toString() : '',
-				unit: item.unit || '',
+				quantity: quantity,
+				unit: unit,
 			},
 		},
 		' ', // Add space after mention
@@ -252,6 +268,7 @@ export function insertTimerMention(
 		{
 			type: 'timerMention',
 			props: {
+				id: `timer-${crypto.randomUUID()}`,
 				duration: item.duration,
 				durationMs: item.durationMs,
 			},
@@ -260,18 +277,4 @@ export function insertTimerMention(
 	] as any);
 }
 
-export function insertRecipeMention(
-	editor: any,
-	recipe: RecipeReference
-) {
-	editor.insertInlineContent([
-		{
-			type: 'recipeMention',
-			props: {
-				id: recipe.id,
-				title: recipe.title,
-			},
-		},
-		' ',
-	] as any);
-}
+// ... end of file ...

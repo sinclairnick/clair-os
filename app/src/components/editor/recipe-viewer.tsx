@@ -8,7 +8,6 @@ import { BlockNoteView } from '@blocknote/shadcn';
 import {
 	IngredientMention,
 	TimerMention,
-	RecipeMention,
 } from './blocknote-schema';
 import { useTheme } from '@/components/theme-provider';
 import { cn } from '@/lib/utils';
@@ -19,7 +18,6 @@ const schema = BlockNoteSchema.create({
 		...defaultInlineContentSpecs,
 		ingredientMention: IngredientMention,
 		timerMention: TimerMention,
-		recipeMention: RecipeMention,
 	},
 });
 

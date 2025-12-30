@@ -1,6 +1,7 @@
 'use client';
 
 import { forwardRef, useImperativeHandle, useState, useMemo, useCallback } from 'react';
+import { Clock, Utensils } from 'lucide-react';
 import { BlockNoteSchema, defaultInlineContentSpecs } from '@blocknote/core';
 import { useCreateBlockNote, SuggestionMenuController } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/shadcn';
@@ -8,7 +9,6 @@ import { BlockNoteView } from '@blocknote/shadcn';
 import {
 	IngredientMention,
 	TimerMention,
-	RecipeMention,
 	formatDuration,
 } from './blocknote-schema';
 import { useTheme } from '@/components/theme-provider';
@@ -34,7 +34,6 @@ const schema = BlockNoteSchema.create({
 		...defaultInlineContentSpecs,
 		ingredientMention: IngredientMention,
 		timerMention: TimerMention,
-		recipeMention: RecipeMention,
 	},
 });
 
@@ -231,16 +230,28 @@ export const RecipeEditor = forwardRef<RecipeEditorRef, RecipeEditorProps>(
 					theme={resolvedTheme}
 					className='[&>.bn-editor]:!bg-transparent'
 				>
-					{/* @ mention menu for ingredients (and future recipes) */}
+					{/* @ mention menu for ingredients */}
 					<SuggestionMenuController
 						triggerCharacter="@"
 						getItems={async (query) => {
 							const items = getMentionItemsMemoized(query);
-							return items.map((item) => ({
-								title: item.isNew ? `Create "${item.name}"` : item.name,
-								onItemClick: () => insertIngredientMention(editor, item),
-								group: item.type === 'recipe' ? 'Recipes' : 'Ingredients',
-							}));
+							return items.map((item) => {
+								let title = item.name;
+								if (item.type === 'ingredient') {
+									if (item.isNew) {
+										title = `Create "${item.name}"`;
+									} else if (item.quantity || item.unit) {
+										title = `${item.name} (${item.quantity || ''} ${item.unit || ''})`.trim().replace(' )', ')');
+									}
+								}
+
+								return {
+									title,
+									icon: <Utensils className="w-4 h-4" />,
+									onItemClick: () => insertIngredientMention(editor, item),
+									group: 'Ingredients',
+								};
+							});
 						}}
 					/>
 
