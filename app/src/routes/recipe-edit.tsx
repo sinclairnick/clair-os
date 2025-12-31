@@ -650,19 +650,32 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 							{isNew ? "New Recipe" : "Edit Recipe"}
 						</h1>
 					</div>
-					<div className="flex items-center gap-2 ml-auto md:ml-0">
+					<div className="grid grid-cols-2 md:flex gap-2 w-full md:w-auto">
 						{!isNew && (
 							<Button
 								type="button"
 								variant="outline"
 								onClick={() => deleteMutation.mutate()}
 								disabled={deleteMutation.isPending}
+								className="justify-center"
 							>
 								<Trash2 className="w-4 h-4 md:mr-2" />
-								<span className="hidden md:inline">Delete</span>
+								Delete
 							</Button>
 						)}
-						<SaveButton isNew={isNew} isPending={saveMutation.isPending} />
+						<Button
+							type="submit"
+							disabled={saveMutation.isPending || !form.watch("title")?.trim()}
+							className={cn("justify-center", isNew && "col-span-2")}
+						>
+							{saveMutation.isPending ? (
+								<Loader2 className="w-4 h-4 md:mr-2 animate-spin" />
+							) : (
+								<Save className="w-4 h-4 md:mr-2" />
+							)}
+							<span className="md:hidden">{isNew ? "Create" : "Save"}</span>
+							<span className="hidden md:inline">{isNew ? "Create Recipe" : "Save Recipe"}</span>
+						</Button>
 					</div>
 				</div>
 
@@ -948,24 +961,6 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 // ─────────────────────────────────────────────────────────────
 // Sub-components
 // ─────────────────────────────────────────────────────────────
-
-function SaveButton({ isNew, isPending }: { isNew: boolean; isPending: boolean }) {
-	const { control } = useFormContext();
-	const title = useWatch({ control, name: "title" }) || "";
-	const canSave = title.trim().length > 0;
-
-	return (
-		<Button type="submit" disabled={isPending || !canSave}>
-			{isPending ? (
-				<Loader2 className="w-4 h-4 md:mr-2 animate-spin" />
-			) : (
-				<Save className="w-4 h-4 md:mr-2" />
-			)}
-			<span className="hidden md:inline">{isNew ? "Create Recipe" : "Save Recipe"}</span>
-			<span className="md:hidden">{isNew ? "Create" : "Save"}</span>
-		</Button>
-	);
-}
 
 function IngredientsList({
 	groupFields,

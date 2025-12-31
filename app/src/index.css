@@ -199,6 +199,12 @@
     font-size: 16px; /* Prevent iOS zoom */
   }
   
+  /* Larger paragraph text on mobile for readability */
+  .bn-editor .bn-block-content[data-content-type="paragraph"] {
+    font-size: 1.0625rem; /* ~17px - more readable on mobile */
+    line-height: 1.6;
+  }
+  
   /* Make side menu more touch-friendly on mobile */
   .bn-side-menu {
     opacity: 0.8 !important; /* Always visible on mobile */

@@ -319,21 +319,25 @@ export function RecipeDetailPage() {
 						<CardHeader>
 							<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
 								<CardTitle>Ingredients</CardTitle>
-								<div className="flex gap-2">
+								<div className="grid grid-cols-2 md:flex gap-2 w-full md:w-auto">
 									<Button
 										size="sm"
 										variant="ghost"
 										onClick={clearAllChecks}
 										title="Clear all checks"
+										className="justify-center"
 									>
-										<RotateCcw className="w-4 h-4" />
+										<RotateCcw className="w-4 h-4 md:mr-2" />
+										Reset
 									</Button>
 									<Button
 										size="sm"
 										variant="outline"
 										onClick={() => setAddToListDialogOpen(true)}
+										className="justify-center"
 									>
 										<ShoppingCart className="w-4 h-4 md:mr-2" />
+										<span className="md:hidden">Add</span>
 										<span className="hidden md:inline">Add to List</span>
 									</Button>
 								</div>
