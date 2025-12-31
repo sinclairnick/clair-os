@@ -122,16 +122,17 @@ function IngredientRow({ index, onRemove, ingredientIdToFocus, onFocusHandled }:
 		<div
 			ref={ref}
 			className={cn(
-				"flex items-center gap-2 p-1 rounded-md transition-colors relative",
+				"flex items-center gap-1.5 md:gap-2 p-1.5 md:p-1 rounded-md transition-colors relative",
 				isDraggedOver && "bg-accent/20 border-t-2 border-accent",
 				isDragging && "opacity-50"
 			)}
 		>
 			<div
 				ref={dragHandleRef}
-				className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded text-muted-foreground shrink-0 touch-none"
+				className="cursor-grab active:cursor-grabbing min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 md:p-1 flex items-center justify-center hover:bg-muted rounded text-muted-foreground shrink-0"
+				style={{ touchAction: 'none' }}
 			>
-				<GripVertical className="w-4 h-4" />
+				<GripVertical className="w-5 h-5 md:w-4 md:h-4" />
 			</div>
 			<Controller
 				name={`ingredients.${index}.quantity`}
@@ -147,7 +148,7 @@ function IngredientRow({ index, onRemove, ingredientIdToFocus, onFocusHandled }:
 								onFocusHandled();
 							}
 						}}
-						className="w-16 h-8"
+						className="w-14 md:w-16"
 					/>
 				)}
 			/>
@@ -159,7 +160,7 @@ function IngredientRow({ index, onRemove, ingredientIdToFocus, onFocusHandled }:
 						{...field}
 						placeholder="Unit"
 						list="unit-suggestions"
-						className="w-20 h-8"
+						className="w-16 md:w-20"
 					/>
 				)}
 			/>
@@ -170,7 +171,7 @@ function IngredientRow({ index, onRemove, ingredientIdToFocus, onFocusHandled }:
 					<Input
 						{...field}
 						placeholder="Ingredient name"
-						className="flex-1 h-8"
+						className="flex-1 min-w-0"
 					/>
 				)}
 			/>
@@ -178,10 +179,10 @@ function IngredientRow({ index, onRemove, ingredientIdToFocus, onFocusHandled }:
 				type="button"
 				size="icon"
 				variant="ghost"
-				className="shrink-0 h-8 w-8"
+				className="shrink-0"
 				onClick={() => onRemove(index)}
 			>
-				<X className="w-3 h-3 text-muted-foreground" />
+				<X className="w-4 h-4 md:w-3 md:h-3 text-muted-foreground" />
 			</Button>
 		</div>
 	);
@@ -273,45 +274,45 @@ function IngredientGroupSection({
 				isDragging && "opacity-50"
 			)}
 		>
-			<div className="flex items-center gap-2 p-2 bg-muted/50 rounded-t-lg">
+			<div className="flex items-center gap-1.5 md:gap-2 p-2 bg-muted/50 rounded-t-lg">
 				<div
 					ref={dragHandleRef}
-					className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded text-muted-foreground shrink-0 touch-none"
+					className="cursor-grab active:cursor-grabbing min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 md:p-1 flex items-center justify-center hover:bg-muted rounded text-muted-foreground shrink-0"
+					style={{ touchAction: 'none' }}
 				>
-					<GripVertical className="w-4 h-4" />
+					<GripVertical className="w-5 h-5 md:w-4 md:h-4" />
 				</div>
 				<button
 					type="button"
 					onClick={() => toggleGroupExpanded(groupIndex)}
-					className="p-1 hover:bg-muted rounded"
+					className="p-2 md:p-1 hover:bg-muted rounded min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center"
 				>
 					{isExpanded ? (
-						<ChevronDown className="w-4 h-4" />
+						<ChevronDown className="w-5 h-5 md:w-4 md:h-4" />
 					) : (
-						<ChevronRight className="w-4 h-4" />
+						<ChevronRight className="w-5 h-5 md:w-4 md:h-4" />
 					)}
 				</button>
 				<Input
 					{...register(`ingredientGroups.${groupIndex}.name`)}
-					className="flex-1 h-8 font-medium bg-transparent border-none"
+					className="flex-1 min-w-0 font-medium bg-transparent border-none"
 				/>
 				<Button
 					type="button"
-					size="icon"
+					size="icon-sm"
 					variant="ghost"
-					className="h-6 w-6"
 					onClick={() => handleAddIngredient(actualGroupId ?? null)}
 				>
-					<Plus className="w-3 h-3" />
+					<Plus className="w-4 h-4 md:w-3 md:h-3" />
 				</Button>
 				<Button
 					type="button"
-					size="icon"
+					size="icon-sm"
 					variant="ghost"
-					className="h-6 w-6 text-muted-foreground hover:text-destructive"
+					className="text-muted-foreground hover:text-destructive"
 					onClick={() => handleRemoveGroup(groupIndex)}
 				>
-					<X className="w-3 h-3" />
+					<X className="w-4 h-4 md:w-3 md:h-3" />
 				</Button>
 			</div>
 
@@ -640,16 +641,16 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 				</datalist>
 
 				{/* Header */}
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-4">
+				<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+					<div className="flex items-center gap-3 md:gap-4">
 						<Button type="button" variant="ghost" size="icon" onClick={() => navigate("/recipes")}>
 							<ArrowLeft className="w-5 h-5" />
 						</Button>
-						<h1 className="text-2xl font-bold">
+						<h1 className="text-xl md:text-2xl font-bold">
 							{isNew ? "New Recipe" : "Edit Recipe"}
 						</h1>
 					</div>
-					<div className="flex items-center gap-2">
+					<div className="flex items-center gap-2 ml-auto md:ml-0">
 						{!isNew && (
 							<Button
 								type="button"
@@ -657,8 +658,8 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 								onClick={() => deleteMutation.mutate()}
 								disabled={deleteMutation.isPending}
 							>
-								<Trash2 className="w-4 h-4 mr-2" />
-								Delete
+								<Trash2 className="w-4 h-4 md:mr-2" />
+								<span className="hidden md:inline">Delete</span>
 							</Button>
 						)}
 						<SaveButton isNew={isNew} isPending={saveMutation.isPending} />
@@ -956,11 +957,12 @@ function SaveButton({ isNew, isPending }: { isNew: boolean; isPending: boolean }
 	return (
 		<Button type="submit" disabled={isPending || !canSave}>
 			{isPending ? (
-				<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+				<Loader2 className="w-4 h-4 md:mr-2 animate-spin" />
 			) : (
-				<Save className="w-4 h-4 mr-2" />
+				<Save className="w-4 h-4 md:mr-2" />
 			)}
-			{isNew ? "Create Recipe" : "Save Recipe"}
+			<span className="hidden md:inline">{isNew ? "Create Recipe" : "Save Recipe"}</span>
+			<span className="md:hidden">{isNew ? "Create" : "Save"}</span>
 		</Button>
 	);
 }
@@ -982,15 +984,16 @@ function IngredientsList({
 	return (
 		<>
 			<CardHeader className="pb-3">
-				<div className="flex items-center justify-between">
+				<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
 					<CardTitle>Ingredients</CardTitle>
-					<div className="flex gap-2">
-						<Button type="button" size="sm" variant="outline" onClick={handleAddGroup}>
-							<FolderPlus className="w-4 h-4 mr-1" />
-							Add Section
+					<div className="grid grid-cols-2 md:flex gap-2">
+						<Button type="button" size="sm" variant="outline" onClick={handleAddGroup} className="justify-center">
+							<FolderPlus className="w-4 h-4 md:mr-1" />
+							<span className="hidden md:inline">Add Section</span>
+							<span className="md:hidden">Section</span>
 						</Button>
-						<Button type="button" size="sm" variant="secondary" onClick={() => handleAddIngredient()}>
-							<Plus className="w-4 h-4 mr-1" />
+						<Button type="button" size="sm" variant="secondary" onClick={() => handleAddIngredient()} className="justify-center">
+							<Plus className="w-4 h-4 md:mr-1" />
 							Add
 						</Button>
 					</div>

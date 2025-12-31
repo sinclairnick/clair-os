@@ -192,6 +192,61 @@
   -webkit-touch-callout: none; /* Prevents long-press menu on iOS */
 }
 
+/* Mobile-specific BlockNote improvements */
+@media (max-width: 767px) {
+  .bn-editor {
+    min-height: 250px;
+    font-size: 16px; /* Prevent iOS zoom */
+  }
+  
+  /* Make side menu more touch-friendly on mobile */
+  .bn-side-menu {
+    opacity: 0.8 !important; /* Always visible on mobile */
+    gap: 4px;
+  }
+  
+  .bn-side-menu [data-test="dragHandle"],
+  .bn-side-menu [data-test="sideMenuButton"] {
+    min-width: 36px !important;
+    min-height: 36px !important;
+    padding: 8px !important;
+  }
+  
+  /* Larger suggestion menu items for touch */
+  .bn-suggestion-menu-item {
+    padding: 12px 16px !important;
+    min-height: 44px;
+  }
+  
+  /* Better block spacing on mobile */
+  .bn-block-group > .bn-block-outer {
+    margin-bottom: 4px;
+  }
+}
+
+/* PWA-like mobile experience */
+@media (max-width: 767px) {
+  /* Prevent text selection on interactive elements for app-like feel */
+  button, 
+  [role="button"],
+  nav a,
+  .cursor-grab {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* Smoother scrolling */
+  main {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Prevent pull-to-refresh on some elements */
+  .bn-editor,
+  [data-slot="dialog-content"] {
+    overscroll-behavior: contain;
+  }
+}
+
 /* Mute the side menu (plus/drag handle buttons) */
 .bn-side-menu {
   opacity: 0.4;

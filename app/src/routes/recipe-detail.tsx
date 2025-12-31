@@ -245,8 +245,8 @@ export function RecipeDetailPage() {
 						<Pin className={cn("w-4 h-4", isWatched(recipeId!) && "fill-current")} />
 					</Button>
 					<Button variant="outline" onClick={() => navigate(`/recipes/${recipeId}/edit`)}>
-						<Edit className="w-4 h-4 mr-2" />
-						Edit
+						<Edit className="w-4 h-4 md:mr-2" />
+						<span className="hidden md:inline">Edit</span>
 					</Button>
 				</div>
 			</div>
@@ -263,7 +263,7 @@ export function RecipeDetailPage() {
 						/>
 					</div>
 				)}
-				<h1 className="text-3xl font-bold mb-2">{recipe.title}</h1>
+				<h1 className="text-2xl md:text-3xl font-bold mb-2">{recipe.title}</h1>
 				{recipe.description && (
 					<p className="text-lg text-muted-foreground mb-4">{recipe.description}</p>
 				)}
@@ -317,7 +317,7 @@ export function RecipeDetailPage() {
 				<div>
 					<Card>
 						<CardHeader>
-							<div className="flex items-center justify-between">
+							<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
 								<CardTitle>Ingredients</CardTitle>
 								<div className="flex gap-2">
 									<Button
@@ -333,8 +333,8 @@ export function RecipeDetailPage() {
 										variant="outline"
 										onClick={() => setAddToListDialogOpen(true)}
 									>
-										<ShoppingCart className="w-4 h-4 mr-2" />
-										Add to List
+										<ShoppingCart className="w-4 h-4 md:mr-2" />
+										<span className="hidden md:inline">Add to List</span>
 									</Button>
 								</div>
 							</div>
@@ -345,9 +345,8 @@ export function RecipeDetailPage() {
 								{/* Scaling controls */}
 								<div className="flex items-center gap-1">
 									<Button
-										size="icon"
+										size="icon-sm"
 										variant="ghost"
-										className="h-6 w-6"
 										onClick={() => handleScaleChange(Math.max(0.25, scaleFactor - 0.25))}
 									>
 										<Minus className="w-3 h-3" />
@@ -359,9 +358,8 @@ export function RecipeDetailPage() {
 										{scaleFactor}x
 									</span>
 									<Button
-										size="icon"
+										size="icon-sm"
 										variant="ghost"
-										className="h-6 w-6"
 										onClick={() => handleScaleChange(scaleFactor + 0.25)}
 									>
 										<Plus className="w-3 h-3" />
@@ -369,9 +367,9 @@ export function RecipeDetailPage() {
 									<div className="w-8 flex justify-center">
 										{scaleFactor !== 1 && (
 											<Button
-												size="icon"
+												size="icon-sm"
 												variant="ghost"
-												className="h-6 w-6 text-muted-foreground hover:text-foreground"
+												className="text-muted-foreground hover:text-foreground"
 												onClick={() => handleScaleChange(1)}
 												title="Reset scaling"
 											>
