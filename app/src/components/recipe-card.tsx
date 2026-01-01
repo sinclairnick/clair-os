@@ -39,7 +39,7 @@ export function RecipeCard({
 			className={cn(
 				"hover:shadow-md transition-shadow cursor-pointer group relative overflow-hidden",
 				{
-					"pt-0": recipe.imageUrl != null,
+					"!pt-0": recipe.imageUrl != null,
 					"ring-2 ring-primary border-primary": selectionMode && isSelected
 				},
 				className

@@ -1,19 +1,9 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-	DialogFooter,
-} from "@/components/ui/dialog";
 import {
 	Select,
 	SelectContent,
@@ -23,13 +13,14 @@ import {
 } from "@/components/ui/select";
 import { Plus, Loader2, Check, Clock, AlertCircle, Trash2, LayoutList, Kanban, Circle } from "lucide-react";
 import { useCurrentFamilyId } from "@/components/auth-provider";
-import { tasksQuery, queryKeys, updateTaskMutation, createTaskMutation } from "@/lib/queries";
+import { tasksQuery, queryKeys, updateTaskMutation } from "@/lib/queries";
 import { api } from "@/lib/api";
 import { format, isPast, isToday } from "date-fns";
 import { TaskBoard } from "@/components/task-board";
 import { useAppStore } from "@/lib/store";
 import { PageTitle } from "@/components/page-title";
 import { PageHeader, PageHeaderHeading, PageHeaderActions } from "@/components/page-header";
+import { CreateTaskDialog } from "@/components/create-task-dialog";
 
 const priorityColors = {
 	low: "bg-secondary text-secondary-foreground",
@@ -37,7 +28,6 @@ const priorityColors = {
 	high: "bg-destructive text-destructive-foreground",
 };
 
-type Priority = "low" | "medium" | "high";
 type TaskStatus = "todo" | "in_progress" | "done" | "canceled" | "pending";
 
 export function TasksPage() {
@@ -49,13 +39,6 @@ export function TasksPage() {
 	const setViewMode = setTaskViewMode;
 
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-
-	// Form state
-	const [newTaskTitle, setNewTaskTitle] = useState("");
-	const [newTaskDescription, setNewTaskDescription] = useState("");
-	const [newTaskPriority, setNewTaskPriority] = useState<Priority>("medium");
-	const [newTaskDueDate, setNewTaskDueDate] = useState("");
-	const [newTaskTags, setNewTaskTags] = useState("");
 
 	const { data: tasks, isLoading, error } = useQuery(
 		tasksQuery(familyId || "", undefined, {
@@ -73,18 +56,6 @@ export function TasksPage() {
 		}),
 	});
 
-	const createMutation = useMutation({
-		...createTaskMutation({
-			onSuccess: () => {
-				if (familyId) {
-					queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all(familyId) });
-				}
-				setIsCreateDialogOpen(false);
-				resetForm();
-			},
-		}),
-	});
-
 	const deleteMutation = useMutation({
 		mutationFn: (id: string) => api.tasks.delete(id),
 		onSuccess: () => {
@@ -93,33 +64,6 @@ export function TasksPage() {
 			}
 		},
 	});
-
-	const resetForm = () => {
-		setNewTaskTitle("");
-		setNewTaskDescription("");
-		setNewTaskPriority("medium");
-		setNewTaskDueDate("");
-		setNewTaskTags("");
-	};
-
-	const handleCreateTask = () => {
-		if (!familyId || !newTaskTitle.trim()) return;
-
-		const tags = newTaskTags
-			.split(',')
-			.map(t => t.trim())
-			.filter(t => t.length > 0);
-
-		createMutation.mutate({
-			familyId,
-			title: newTaskTitle.trim(),
-			description: newTaskDescription.trim() || undefined,
-			priority: newTaskPriority,
-			dueDate: newTaskDueDate || undefined,
-			status: 'todo',
-			tags: tags,
-		});
-	};
 
 	const handleStatusChange = (taskId: string, newStatus: TaskStatus) => {
 		updateMutation.mutate({ id: taskId, data: { status: newStatus } });
@@ -162,87 +106,11 @@ export function TasksPage() {
 						</Button>
 					</div>
 
-					<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-						<DialogTrigger render={
-							<Button>
-								<Plus className="w-4 h-4 mr-2" />
-								Add Task
-							</Button>
-						}>
-						</DialogTrigger>
-						<DialogContent>
-							<DialogHeader>
-								<DialogTitle>Create Task</DialogTitle>
-								<DialogDescription>
-									Add a new task or chore for your family.
-								</DialogDescription>
-							</DialogHeader>
-							<div className="space-y-4">
-								<Input
-									placeholder="Task title"
-									value={newTaskTitle}
-									onChange={(e) => setNewTaskTitle(e.target.value)}
-								/>
-								<Textarea
-									placeholder="Description (optional)"
-									value={newTaskDescription}
-									onChange={(e) => setNewTaskDescription(e.target.value)}
-									rows={2}
-								/>
-								<div className="space-y-2">
-									<label className="text-sm font-medium">Tags</label>
-									<Input
-										placeholder="e.g. kitchen, chore (comma separated)"
-										value={newTaskTags}
-										onChange={(e) => setNewTaskTags(e.target.value)}
-									/>
-								</div>
-								<div className="grid grid-cols-2 gap-4">
-									<div className="space-y-2">
-										<label className="text-sm font-medium">Priority</label>
-										<Select
-											value={newTaskPriority}
-											onValueChange={(v) => setNewTaskPriority(v as Priority)}
-										>
-											<SelectTrigger>
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="low">Low</SelectItem>
-												<SelectItem value="medium">Medium</SelectItem>
-												<SelectItem value="high">High</SelectItem>
-											</SelectContent>
-										</Select>
-									</div>
-									<div className="space-y-2">
-										<label className="text-sm font-medium">Due Date</label>
-										<Input
-											type="date"
-											value={newTaskDueDate}
-											onChange={(e) => setNewTaskDueDate(e.target.value)}
-										/>
-									</div>
-								</div>
-							</div>
-							<DialogFooter>
-								<Button
-									variant="outline"
-									onClick={() => setIsCreateDialogOpen(false)}
-								>
-									Cancel
-								</Button>
-								<Button
-									onClick={handleCreateTask}
-									disabled={createMutation.isPending || !newTaskTitle.trim()}
-								>
-									{createMutation.isPending && (
-										<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-									)}
-									Create
-								</Button>
-							</DialogFooter>
-						</DialogContent>
-					</Dialog>
+					<Button onClick={() => setIsCreateDialogOpen(true)}>
+						<Plus className="w-4 h-4 mr-2" />
+						Add Task
+					</Button>
+					<CreateTaskDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
 				</PageHeaderActions>
 			</PageHeader>
 

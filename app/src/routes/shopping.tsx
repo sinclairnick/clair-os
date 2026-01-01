@@ -1,57 +1,31 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-	DialogFooter,
-} from "@/components/ui/dialog";
 import { Plus, Loader2, ShoppingBag, CheckCircle, Trash2 } from "lucide-react";
 import { useCurrentFamilyId } from "@/components/auth-provider";
 import {
 	shoppingListsQuery,
 	queryKeys,
-	createShoppingListMutation,
 	deleteShoppingListMutation,
 } from "@/lib/queries";
 import { toast } from "sonner";
 import { PageTitle } from "@/components/page-title";
 import { PageHeader, PageHeaderHeading, PageHeaderActions } from "@/components/page-header";
 import { ShoppingListCard } from "@/components/shopping-list-card";
+import { CreateShoppingListDialog } from "@/components/create-shopping-list-dialog";
 
 export function ShoppingPage() {
 	const familyId = useCurrentFamilyId();
 	const queryClient = useQueryClient();
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const [newListName, setNewListName] = useState("");
 
 	const { data: lists, isLoading, error } = useQuery(
 		shoppingListsQuery(familyId || "", {
 			enabled: !!familyId,
 		})
 	);
-
-	const createListMutation = useMutation({
-		...createShoppingListMutation({
-			onSuccess: () => {
-				if (familyId) {
-					queryClient.invalidateQueries({
-						queryKey: queryKeys.shopping.lists(familyId),
-					});
-				}
-				setIsCreateDialogOpen(false);
-				setNewListName("");
-				toast.success("Shopping list created");
-			},
-			onError: () => toast.error("Failed to create shopping list"),
-		}),
-	});
 
 	const deleteListMutation = useMutation({
 		...deleteShoppingListMutation({
@@ -66,11 +40,6 @@ export function ShoppingPage() {
 			onError: () => toast.error("Failed to delete shopping list"),
 		}),
 	});
-
-	const handleCreateList = () => {
-		if (!familyId || !newListName.trim()) return;
-		createListMutation.mutate({ familyId, name: newListName.trim() });
-	};
 
 	if (!familyId) {
 		return (
@@ -90,47 +59,14 @@ export function ShoppingPage() {
 			<PageHeader>
 				<PageHeaderHeading title="Shopping Lists" description="Manage your grocery and shopping lists" />
 				<PageHeaderActions>
-					<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-						<DialogTrigger render={
-							<Button>
-								<Plus className="w-4 h-4 mr-2" />
-								New List
-							</Button>
-						} />
-						<DialogContent>
-							<DialogHeader>
-								<DialogTitle>Create Shopping List</DialogTitle>
-								<DialogDescription>
-									Give your new shopping list a name.
-								</DialogDescription>
-							</DialogHeader>
-							<Input
-								placeholder="e.g., Weekly Groceries"
-								value={newListName}
-								onChange={(e) => setNewListName(e.target.value)}
-								onKeyDown={(e) => e.key === "Enter" && handleCreateList()}
-							/>
-							<DialogFooter>
-								<Button
-									variant="outline"
-									onClick={() => setIsCreateDialogOpen(false)}
-								>
-									Cancel
-								</Button>
-								<Button
-									onClick={handleCreateList}
-									disabled={
-										createListMutation.isPending || !newListName.trim()
-									}
-								>
-									{createListMutation.isPending && (
-										<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-									)}
-									Create
-								</Button>
-							</DialogFooter>
-						</DialogContent>
-					</Dialog>
+					<Button onClick={() => setIsCreateDialogOpen(true)}>
+						<Plus className="w-4 h-4 mr-2" />
+						New List
+					</Button>
+					<CreateShoppingListDialog
+						open={isCreateDialogOpen}
+						onOpenChange={setIsCreateDialogOpen}
+					/>
 				</PageHeaderActions>
 			</PageHeader>
 

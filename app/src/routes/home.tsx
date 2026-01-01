@@ -1,13 +1,14 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CookingPot, Clock, Play, Pause, RotateCcw, X, Bell, Award, CalendarDays, ChevronRight, Plus, Loader2, CheckCircle, Receipt } from "lucide-react";
-import { Link } from "react-router";
+import { CookingPot, Clock, Play, Pause, RotateCcw, X, Bell, Award, CalendarDays, ChevronRight, Plus, CheckCircle, Receipt, ShoppingCart, CheckSquare } from "lucide-react";
+import { Link, useNavigate } from "react-router";
 import { useTimerStore, getLiveRemainingMs } from "@/lib/timer-store";
 import { cn } from "@/lib/utils";
 import { ROUTES } from "@/lib/routes";
 import { useState, useEffect } from "react";
 import { PageTitle } from "@/components/page-title";
 import { useAuth, useCurrentFamilyId } from "@/components/auth-provider";
-import { dashboardSummaryQuery, queryKeys, createShoppingListMutation } from "@/lib/queries";
+import { dashboardSummaryQuery, queryKeys } from "@/lib/queries";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { PageHeader, PageHeaderHeading, PageHeaderActions } from "@/components/page-header";
@@ -17,13 +18,21 @@ import { api, type RecipeResponse } from "@/lib/api";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecipeCard } from "@/components/recipe-card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { CreateShoppingListDialog } from "@/components/create-shopping-list-dialog";
+import { CreateTaskDialog } from "@/components/create-task-dialog";
+import { CreateReminderDialog } from "@/components/create-reminder-dialog";
 
 export function HomePage() {
 	const { user } = useAuth();
 	const familyId = useCurrentFamilyId();
 	const queryClient = useQueryClient();
+	const navigate = useNavigate();
 	const { timers, removeTimer, startTimer, pauseTimer, resetTimer } = useTimerStore();
 	const [activeTimers, setActiveTimers] = useState<string[]>([]);
 	const [, setTick] = useState(0);
@@ -31,9 +40,10 @@ export function HomePage() {
 	// Persisted selection for recipe tabs
 	const [recipeTab, setRecipeTab] = useState(() => localStorage.getItem("clairos_dashboard_recipe_tab") || "recent");
 
-	// Shopping list creation state
-	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const [newListName, setNewListName] = useState("");
+	// Dialog states
+	const [createListOpen, setCreateListOpen] = useState(false);
+	const [createTaskOpen, setCreateTaskOpen] = useState(false);
+	const [createReminderOpen, setCreateReminderOpen] = useState(false);
 
 	const { data: summary, isLoading } = useQuery({
 		...dashboardSummaryQuery(familyId || ""),
@@ -52,25 +62,6 @@ export function HomePage() {
 			toast.error("Failed to update favorite status");
 		}
 	});
-
-	const createListMutation = useMutation({
-		...createShoppingListMutation({
-			onSuccess: () => {
-				if (familyId) {
-					queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary(familyId) });
-				}
-				setIsCreateDialogOpen(false);
-				setNewListName("");
-				toast.success("Shopping list created");
-			},
-			onError: () => toast.error("Failed to create shopping list"),
-		}),
-	});
-
-	const handleCreateList = () => {
-		if (!familyId || !newListName.trim()) return;
-		createListMutation.mutate({ familyId, name: newListName.trim(), pinned: true });
-	};
 
 	useEffect(() => {
 		const interval = setInterval(() => {
@@ -107,14 +98,39 @@ export function HomePage() {
 					description="Welcome home."
 				/>
 				<PageHeaderActions>
-					<Link to={ROUTES.RECIPE_NEW}>
-						<Button size="sm" variant="outline">
-							<CookingPot className="w-4 h-4 mr-2" />
-							New Recipe
-						</Button>
-					</Link>
+					<DropdownMenu>
+						<DropdownMenuTrigger render={
+							<Button>
+								<Plus className="w-4 h-4 mr-2" />
+								Create New
+							</Button>
+						}>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end" className="w-48">
+							<DropdownMenuItem onClick={() => setCreateListOpen(true)}>
+								<ShoppingCart className="w-4 h-4 mr-2" />
+								Shopping List
+							</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => navigate(ROUTES.RECIPE_NEW)}>
+								<CookingPot className="w-4 h-4 mr-2" />
+								Recipe
+							</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => setCreateReminderOpen(true)}>
+								<Bell className="w-4 h-4 mr-2" />
+								Reminder
+							</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => setCreateTaskOpen(true)}>
+								<CheckSquare className="w-4 h-4 mr-2" />
+								Task
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
 				</PageHeaderActions>
 			</PageHeader>
+
+			<CreateShoppingListDialog open={createListOpen} onOpenChange={setCreateListOpen} />
+			<CreateTaskDialog open={createTaskOpen} onOpenChange={setCreateTaskOpen} />
+			<CreateReminderDialog open={createReminderOpen} onOpenChange={setCreateReminderOpen} />
 
 			{/* Active Timers */}
 			{activeTimers.length > 0 && (
@@ -195,44 +211,14 @@ export function HomePage() {
 										</TabsTrigger>
 									))}
 								</TabsList>
-								<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-									<DialogTrigger render={
-										<Button size="icon" variant="ghost" className="h-8 w-8 rounded-full mb-2">
-											<Plus className="w-4 h-4" />
-										</Button>
-									} />
-									<DialogContent>
-										<DialogHeader>
-											<DialogTitle>Create Shopping List</DialogTitle>
-											<DialogDescription>
-												Give your new shopping list a name.
-											</DialogDescription>
-										</DialogHeader>
-										<Input
-											placeholder="e.g., Weekly Groceries"
-											value={newListName}
-											onChange={(e) => setNewListName(e.target.value)}
-											onKeyDown={(e) => e.key === "Enter" && handleCreateList()}
-										/>
-										<DialogFooter>
-											<Button
-												variant="outline"
-												onClick={() => setIsCreateDialogOpen(false)}
-											>
-												Cancel
-											</Button>
-											<Button
-												onClick={handleCreateList}
-												disabled={createListMutation.isPending || !newListName.trim()}
-											>
-												{createListMutation.isPending && (
-													<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-												)}
-												Create
-											</Button>
-										</DialogFooter>
-									</DialogContent>
-								</Dialog>
+								<Button
+									size="icon"
+									variant="ghost"
+									className="h-8 w-8 rounded-full mb-2"
+									onClick={() => setCreateListOpen(true)}
+								>
+									<Plus className="w-4 h-4" />
+								</Button>
 							</div>
 							{summary.pinnedShoppingLists.map(list => (
 								<TabsContent key={list.id} value={list.id} className="mt-4 focus-visible:ring-0">

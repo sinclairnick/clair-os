@@ -1,54 +1,29 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-	DialogFooter,
-} from "@/components/ui/dialog";
 import { Plus, Loader2, Bell, BellOff, Clock, ExternalLink, Link2 } from "lucide-react";
 import { useCurrentFamilyId } from "@/components/auth-provider";
-import { api, type ReminderResponse, type ReminderCreateInput } from "@/lib/api";
+import { api, type ReminderResponse } from "@/lib/api";
 import { format, isPast, isToday } from "date-fns";
 import { PageTitle } from "@/components/page-title";
 import { PageHeader, PageHeaderHeading, PageHeaderActions } from "@/components/page-header";
 import { ROUTES } from "@/lib/routes";
 import { Link } from "react-router";
-import { pushManager } from "@/lib/push-manager";
-import { toast } from "sonner";
+import { CreateReminderDialog } from "@/components/create-reminder-dialog";
 
 export function RemindersPage() {
 	const familyId = useCurrentFamilyId();
 	const queryClient = useQueryClient();
 
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const [newTitle, setNewTitle] = useState("");
-	const [newDescription, setNewDescription] = useState("");
-	const [newRemindAt, setNewRemindAt] = useState("");
-	const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
-	const [isSubscribing, setIsSubscribing] = useState(false);
 
 	const { data: reminders, isLoading, error } = useQuery({
 		queryKey: ['reminders', familyId],
 		queryFn: () => api.reminders.list(familyId || '', { dismissed: 'false' }),
 		enabled: !!familyId,
-	});
-
-	const createMutation = useMutation({
-		mutationFn: (data: ReminderCreateInput) => api.reminders.create(data),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['reminders', familyId] });
-			setIsCreateDialogOpen(false);
-			resetForm();
-		},
 	});
 
 	const dismissMutation = useMutation({
@@ -57,56 +32,6 @@ export function RemindersPage() {
 			queryClient.invalidateQueries({ queryKey: ['reminders', familyId] });
 		},
 	});
-
-	const resetForm = () => {
-		setNewTitle("");
-		setNewDescription("");
-		setNewRemindAt("");
-	};
-
-	const handleCreate = async () => {
-		if (!familyId || !newTitle.trim() || !newRemindAt) return;
-
-		// Check push status
-		const status = await pushManager.getStatus();
-
-		if (status === 'unsubscribed') {
-			setIsPushDialogOpen(true);
-			return;
-		}
-
-		if (status === 'unsupported' || status === 'denied') {
-			toast.warning("Warning: You won't receive a push notification on this device.", {
-				description: status === 'denied' ? "Notifications are blocked by your browser." : "Your browser doesn't support push notifications.",
-			});
-		}
-
-		executeCreate();
-	};
-
-	const executeCreate = () => {
-		if (!familyId) return;
-		createMutation.mutate({
-			familyId,
-			title: newTitle.trim(),
-			description: newDescription.trim() || undefined,
-			remindAt: new Date(newRemindAt).toISOString(),
-		});
-	};
-
-	const handleEnablePush = async () => {
-		setIsSubscribing(true);
-		try {
-			await pushManager.subscribe();
-			toast.success("Notifications enabled!");
-			setIsPushDialogOpen(false);
-			executeCreate();
-		} catch (error: any) {
-			toast.error(error.message || "Failed to enable notifications");
-		} finally {
-			setIsSubscribing(false);
-		}
-	};
 
 	if (!familyId) {
 		return (
@@ -126,56 +51,11 @@ export function RemindersPage() {
 			<PageHeader>
 				<PageHeaderHeading title="Reminders" description="Stay on top of important dates and events" />
 				<PageHeaderActions>
-					<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-						<DialogTrigger render={
-							<Button>
-								<Plus className="w-4 h-4 mr-2" />
-								New Reminder
-							</Button>
-						}>
-						</DialogTrigger>
-						<DialogContent>
-							<DialogHeader>
-								<DialogTitle>Create Reminder</DialogTitle>
-								<DialogDescription>
-									Add a new reminder for yourself or your family.
-								</DialogDescription>
-							</DialogHeader>
-							<div className="space-y-4">
-								<Input
-									placeholder="Reminder title"
-									value={newTitle}
-									onChange={(e) => setNewTitle(e.target.value)}
-								/>
-								<Textarea
-									placeholder="Description (optional)"
-									value={newDescription}
-									onChange={(e) => setNewDescription(e.target.value)}
-									rows={2}
-								/>
-								<div className="space-y-2">
-									<label className="text-sm font-medium">Remind At</label>
-									<Input
-										type="datetime-local"
-										value={newRemindAt}
-										onChange={(e) => setNewRemindAt(e.target.value)}
-									/>
-								</div>
-							</div>
-							<DialogFooter>
-								<Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-									Cancel
-								</Button>
-								<Button
-									onClick={handleCreate}
-									disabled={createMutation.isPending || !newTitle.trim() || !newRemindAt}
-								>
-									{createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-									Create
-								</Button>
-							</DialogFooter>
-						</DialogContent>
-					</Dialog>
+					<Button onClick={() => setIsCreateDialogOpen(true)}>
+						<Plus className="w-4 h-4 mr-2" />
+						New Reminder
+					</Button>
+					<CreateReminderDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
 				</PageHeaderActions>
 			</PageHeader>
 
@@ -246,37 +126,6 @@ export function RemindersPage() {
 					))}
 				</div>
 			)}
-
-			<Dialog open={isPushDialogOpen} onOpenChange={setIsPushDialogOpen}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle className="flex items-center gap-2">
-							<Bell className="w-5 h-5 text-accent-foreground" />
-							Enable Notifications?
-						</DialogTitle>
-						<DialogDescription>
-							To receive an alert for this reminder, you need to enable push notifications on this device.
-						</DialogDescription>
-					</DialogHeader>
-					<DialogFooter className="flex-col sm:flex-row gap-2">
-						<Button
-							variant="ghost"
-							onClick={() => {
-								setIsPushDialogOpen(false);
-								toast.warning("Reminder created, but you won't receive a push notification.");
-								executeCreate();
-							}}
-							disabled={isSubscribing}
-						>
-							Create anyway
-						</Button>
-						<Button onClick={handleEnablePush} disabled={isSubscribing}>
-							{isSubscribing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-							Enable & Create
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
 		</div>
 	);
 }

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,7 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "@/components/ui/tabs";
-import { Plus, CheckCircle, Trash2, MoreVertical, Pencil, FileText, LayoutGrid, List as ListIcon, Pin, PinOff } from "lucide-react";
+import { Plus, CheckCircle, Trash2, MoreVertical, Pencil, FileText, LayoutGrid, List as ListIcon, Pin, PinOff, Filter, FilterX, ChevronRight, ChevronDown, Eye, EyeOff, ChevronUp } from "lucide-react";
 import {
 	queryKeys,
 	toggleShoppingItemMutation,
@@ -51,6 +52,11 @@ export function ShoppingListCard({ list, defaultViewMode = "inline" }: ShoppingL
 
 	const [viewMode, setViewMode] = useState<"inline" | "sectioned">(defaultViewMode);
 	const [newItemInput, setNewItemInput] = useState("");
+
+	const [hideChecked, setHideChecked] = useState(false);
+	const [showCompletedAccordion, setShowCompletedAccordion] = useState(false);
+
+	const [isExpanded, setIsExpanded] = useState(true);
 
 	const invalidateLists = () => {
 		if (familyId) {
@@ -147,10 +153,16 @@ export function ShoppingListCard({ list, defaultViewMode = "inline" }: ShoppingL
 		updateListMutation.mutate({ id: list.id, notes: editingNotesValue.trim() || null });
 	};
 
+	// Determine items to show
+	const itemsToShow = hideChecked ? list.items.filter(i => !i.checked) : list.items;
+	const completedItems = list.items.filter(i => i.checked);
+	const hasCompletedItems = completedItems.length > 0;
+
 	return (
-		<Card className="flex flex-col h-full">
-			<CardHeader className="pb-2">
-				<div className="flex items-center justify-between">
+		<Card className="flex flex-col h-full transition-all">
+			<CardHeader className="pb-2 space-y-4">
+				{/* Title Row */}
+				<div className="flex items-center justify-between w-full">
 					{isEditingTitle ? (
 						<div className="flex items-center gap-2 flex-1 mr-2">
 							<Input
@@ -171,139 +183,236 @@ export function ShoppingListCard({ list, defaultViewMode = "inline" }: ShoppingL
 							</Button>
 						</div>
 					) : (
-						<CardTitle className="text-lg flex items-center gap-2">
-							{list.pinned && <Pin className="w-3.5 h-3.5 text-primary fill-primary" />}
-							{list.name}
+						<div className="flex items-center justify-between flex-1">
+							<CardTitle className="text-lg flex items-center gap-2">
+								{list.pinned && <Pin className="w-3.5 h-3.5 text-primary fill-primary" />}
+								{list.name}
+								<Button
+									size="icon"
+									variant="ghost"
+									className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+									onClick={() => {
+										setIsEditingTitle(true);
+										setEditingListName(list.name);
+									}}
+								>
+									<Pencil className="w-3 h-3 text-muted-foreground" />
+								</Button>
+							</CardTitle>
 							<Button
 								size="icon"
 								variant="ghost"
-								className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-								onClick={() => {
-									setIsEditingTitle(true);
-									setEditingListName(list.name);
-								}}
+								onClick={() => setIsExpanded(!isExpanded)}
+								className="h-8 w-8 text-muted-foreground"
 							>
-								<Pencil className="w-3 h-3 text-muted-foreground" />
+								{isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
 							</Button>
-						</CardTitle>
+						</div>
 					)}
+				</div>
 
-					<div className="flex items-center gap-2">
-						<Button
-							size="icon"
-							variant="ghost"
-							className={cn(
-								"h-8 w-8",
-								list.pinned ? "text-primary" : "text-muted-foreground"
-							)}
-							onClick={() => updateListMutation.mutate({ id: list.id, pinned: !list.pinned })}
-						>
-							{list.pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
-						</Button>
-						<Tabs
-							value={viewMode}
-							onValueChange={(val) => setViewMode(val as "inline" | "sectioned")}
-							className="mr-1"
-						>
-							<TabsList className="h-7 p-0.5 bg-muted/50 border-none">
-								<TabsTrigger value="inline" className="px-2 h-6 text-[10px] data-[state=active]:bg-background data-[state=active]:shadow-sm">
-									<ListIcon className="w-3 h-3" />
-								</TabsTrigger>
-								<TabsTrigger value="sectioned" className="px-2 h-6 text-[10px] data-[state=active]:bg-background data-[state=active]:shadow-sm">
-									<LayoutGrid className="w-3 h-3" />
-								</TabsTrigger>
-							</TabsList>
-						</Tabs>
-						<span className="text-sm font-normal text-muted-foreground mr-1">
-							{list.items.filter((i) => i.checked).length}/
-							{list.items.length}
-						</span>
-						<DropdownMenu>
-							<DropdownMenuTrigger>
-								<Button variant="ghost" size="icon" className="h-8 w-8">
-									<MoreVertical className="w-4 h-4" />
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align="end">
-								<DropdownMenuItem onClick={() => updateListMutation.mutate({ id: list.id, pinned: !list.pinned })}>
-									{list.pinned ? <PinOff className="w-4 h-4 mr-2" /> : <Pin className="w-4 h-4 mr-2" />}
-									{list.pinned ? 'Unpin' : 'Pin to Home'}
-								</DropdownMenuItem>
-								<DropdownMenuItem onClick={() => {
-									setIsEditingTitle(true);
-									setEditingListName(list.name);
-								}}>
-									<Pencil className="w-4 h-4 mr-2" />
-									Rename
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									className="text-destructive focus:text-destructive"
-									onClick={() => {
-										if (confirm('Are you sure you want to delete this list?')) {
-											deleteListMutation.mutate(list.id);
-										}
-									}}
-								>
-									<Trash2 className="w-4 h-4 mr-2" />
-									Delete
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
+				{/* Controls Row - Only visible when expanded */}
+				{isExpanded && (
+					<div className="flex items-center justify-between w-full animate-in fade-in slide-in-from-top-1 duration-200">
+						<div className="flex items-center gap-2">
+							<Tabs
+								value={viewMode}
+								onValueChange={(val) => setViewMode(val as "inline" | "sectioned")}
+								className="mr-1"
+							>
+								<TabsList className="h-7 p-0.5 bg-muted/50 border-none">
+									<TabsTrigger value="inline" className="px-2 h-6 text-[10px] data-[state=active]:bg-background data-[state=active]:shadow-sm">
+										<ListIcon className="w-3 h-3" />
+									</TabsTrigger>
+									<TabsTrigger value="sectioned" className="px-2 h-6 text-[10px] data-[state=active]:bg-background data-[state=active]:shadow-sm">
+										<LayoutGrid className="w-3 h-3" />
+									</TabsTrigger>
+								</TabsList>
+							</Tabs>
+
+							{/* Toggle for moving checked items to bottom */}
+							<Button
+								size="sm"
+								variant="ghost"
+								className={cn(
+									"h-7 px-2 text-[10px] gap-1.5",
+									hideChecked ? "bg-primary/10 text-primary hover:text-primary hover:bg-primary/15" : "text-muted-foreground hover:bg-muted/50"
+								)}
+								onClick={() => setHideChecked(!hideChecked)}
+								title={hideChecked ? "Show checked items inline" : "Move checked items to bottom"}
+							>
+								{hideChecked ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+								{hideChecked ? "Hiding Checked" : "Showing Checked"}
+							</Button>
+						</div>
+
+						<div className="flex items-center gap-1">
+							<span className="text-sm font-normal text-muted-foreground mr-1">
+								{list.items.filter((i) => i.checked).length}/
+								{list.items.length}
+							</span>
+
+							<Button
+								size="icon"
+								variant="ghost"
+								className={cn(
+									"h-8 w-8",
+									list.pinned ? "text-primary" : "text-muted-foreground"
+								)}
+								onClick={() => updateListMutation.mutate({ id: list.id, pinned: !list.pinned })}
+								title={list.pinned ? "Unpin List" : "Pin List"}
+							>
+								{list.pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+							</Button>
+
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button variant="ghost" size="icon" className="h-8 w-8">
+										<MoreVertical className="w-4 h-4" />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end">
+									<DropdownMenuItem onClick={() => updateListMutation.mutate({ id: list.id, pinned: !list.pinned })}>
+										{list.pinned ? <PinOff className="w-4 h-4 mr-2" /> : <Pin className="w-4 h-4 mr-2" />}
+										{list.pinned ? 'Unpin' : 'Pin to Home'}
+									</DropdownMenuItem>
+									<DropdownMenuItem onClick={() => {
+										setIsEditingTitle(true);
+										setEditingListName(list.name);
+									}}>
+										<Pencil className="w-4 h-4 mr-2" />
+										Rename
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										className="text-destructive focus:text-destructive"
+										onClick={() => {
+											if (confirm('Are you sure you want to delete this list?')) {
+												deleteListMutation.mutate(list.id);
+											}
+										}}
+									>
+										<Trash2 className="w-4 h-4 mr-2" />
+										Delete
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</div>
 					</div>
-				</div>
+				)}
 			</CardHeader>
-			<CardContent className="space-y-3 flex-1">
-				{/* Add item input */}
-				<div className="flex gap-2">
-					<Input
-						placeholder="Add item..."
-						value={newItemInput}
-						onChange={(e) => setNewItemInput(e.target.value)}
-						onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
-						className="text-sm"
-					/>
-					<Button
-						size="sm"
-						variant="secondary"
-						onClick={handleAddItem}
-						disabled={addItemMutation.isPending || !newItemInput.trim()}
-					>
-						<Plus className="w-4 h-4" />
-					</Button>
-				</div>
 
-				{/* Items list */}
-				<div className="space-y-4">
-					{viewMode === "sectioned" ? (
-						(() => {
-							const grouped = list.items.reduce((acc, item) => {
-								const category = inferCategory(item.name);
-								if (!acc[category]) acc[category] = [];
-								acc[category].push(item);
-								return acc;
-							}, {} as Record<string, typeof list.items>);
+			{isExpanded && (
+				<CardContent className="space-y-3 flex-1 flex flex-col animate-in fade-in slide-in-from-top-2 duration-300">
+					{/* Add item input */}
+					<div className="flex gap-2">
+						<Input
+							placeholder="Add item..."
+							value={newItemInput}
+							onChange={(e) => setNewItemInput(e.target.value)}
+							onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
+							className="text-sm"
+						/>
+						<Button
+							size="sm"
+							variant="secondary"
+							onClick={handleAddItem}
+							disabled={addItemMutation.isPending || !newItemInput.trim()}
+						>
+							<Plus className="w-4 h-4" />
+						</Button>
+					</div>
 
-							// Sort categories by predefined order
-							const categories = Object.keys(grouped).sort((a, b) => {
-								const idxA = GROCERY_CATEGORIES.indexOf(a);
-								const idxB = GROCERY_CATEGORIES.indexOf(b);
-								if (idxA === -1) return 1;
-								if (idxB === -1) return -1;
-								return idxA - idxB;
-							});
+					{/* Items list - Main Area */}
+					<div className="space-y-4 flex-1">
+						{viewMode === "sectioned" ? (
+							(() => {
+								const grouped = itemsToShow.reduce((acc, item) => {
+									const category = inferCategory(item.name);
+									if (!acc[category]) acc[category] = [];
+									acc[category].push(item);
+									return acc;
+								}, {} as Record<string, typeof list.items>);
 
-							return categories.map((category) => (
-								<div key={category} className="space-y-1">
-									<div className="flex items-center gap-2 px-1 mb-1 mt-3 first:mt-0">
-										<span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-											{category}
-										</span>
-										<div className="h-px bg-muted/60 flex-1" />
+								// Sort categories by predefined order
+								const categories = Object.keys(grouped).sort((a, b) => {
+									const idxA = GROCERY_CATEGORIES.indexOf(a);
+									const idxB = GROCERY_CATEGORIES.indexOf(b);
+									if (idxA === -1) return 1;
+									if (idxB === -1) return -1;
+									return idxA - idxB;
+								});
+
+								return categories.map((category) => (
+									<div key={category} className="space-y-1">
+										<div className="flex items-center gap-2 px-1 mb-1 mt-3 first:mt-0">
+											<span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+												{category}
+											</span>
+											<div className="h-px bg-muted/60 flex-1" />
+										</div>
+										{grouped[category].map((item) => (
+											<ItemRow
+												key={item.id}
+												item={item}
+												isPending={toggleMutation.isPending}
+												onToggle={() => toggleMutation.mutate(item.id)}
+												onEdit={() => startEditingItem(item)}
+												onDelete={() => deleteItemMutation.mutate(item.id)}
+												isEditing={editingItemId === item.id}
+												editingName={editingItemName}
+												setEditingName={setEditingItemName}
+												onSave={saveItemName}
+												onCancel={() => setEditingItemId(null)}
+											/>
+										))}
 									</div>
-									{grouped[category].map((item) => (
+								));
+							})()
+						) : (
+							<div className="space-y-1">
+								{itemsToShow.map((item) => (
+									<ItemRow
+										key={item.id}
+										item={item}
+										category={inferCategory(item.name)}
+										isPending={toggleMutation.isPending}
+										onToggle={() => toggleMutation.mutate(item.id)}
+										onEdit={() => startEditingItem(item)}
+										onDelete={() => deleteItemMutation.mutate(item.id)}
+										isEditing={editingItemId === item.id}
+										editingName={editingItemName}
+										setEditingName={setEditingItemName}
+										onSave={saveItemName}
+										onCancel={() => setEditingItemId(null)}
+									/>
+								))}
+							</div>
+						)}
+					</div>
+
+					{/* Completed Items Accordion - Only if hideChecked is true and there are completed items */}
+					{hideChecked && hasCompletedItems && (
+						<div className="border-t border-dashed mt-4 pt-2">
+							<Button
+								variant="ghost"
+								size="sm"
+								className="w-full justify-between text-muted-foreground hover:text-foreground h-8 px-2 mb-2"
+								onClick={() => setShowCompletedAccordion(!showCompletedAccordion)}
+							>
+								<span className="text-xs font-medium flex items-center gap-2">
+									<CheckCircle className="w-3.5 h-3.5" />
+									Completed Items ({completedItems.length})
+								</span>
+								{showCompletedAccordion ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+							</Button>
+
+							{showCompletedAccordion && (
+								<div className="space-y-1 pl-1">
+									{completedItems.map((item) => (
 										<ItemRow
 											key={item.id}
 											item={item}
+											category={inferCategory(item.name)}
 											isPending={toggleMutation.isPending}
 											onToggle={() => toggleMutation.mutate(item.id)}
 											onEdit={() => startEditingItem(item)}
@@ -316,102 +425,83 @@ export function ShoppingListCard({ list, defaultViewMode = "inline" }: ShoppingL
 										/>
 									))}
 								</div>
-							));
-						})()
-					) : (
-						<div className="space-y-1">
-							{list.items.map((item) => (
-								<ItemRow
-									key={item.id}
-									item={item}
-									category={inferCategory(item.name)}
-									isPending={toggleMutation.isPending}
-									onToggle={() => toggleMutation.mutate(item.id)}
-									onEdit={() => startEditingItem(item)}
-									onDelete={() => deleteItemMutation.mutate(item.id)}
-									isEditing={editingItemId === item.id}
-									editingName={editingItemName}
-									setEditingName={setEditingItemName}
-									onSave={saveItemName}
-									onCancel={() => setEditingItemId(null)}
-								/>
-							))}
+							)}
 						</div>
 					)}
-				</div>
 
-				{/* List Notes */}
-				{(list.notes || isEditingNotes) && (
-					<div className="mt-4 pt-4 border-t border-dashed">
-						<div className="flex items-center justify-between mb-2">
-							<h4 className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-								<FileText className="w-3 h-3" />
-								List Notes
-							</h4>
-							{!isEditingNotes && (
-								<Button
-									size="icon"
-									variant="ghost"
-									className="h-6 w-6"
+					{/* List Notes */}
+					{(list.notes || isEditingNotes) && (
+						<div className="mt-4 pt-4 border-t border-dashed">
+							<div className="flex items-center justify-between mb-2">
+								<h4 className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+									<FileText className="w-3 h-3" />
+									List Notes
+								</h4>
+								{!isEditingNotes && (
+									<Button
+										size="icon"
+										variant="ghost"
+										className="h-6 w-6"
+										onClick={() => {
+											setIsEditingNotes(true);
+											setEditingNotesValue(list.notes || "");
+										}}
+									>
+										<Pencil className="w-3 h-3 text-muted-foreground" />
+									</Button>
+								)}
+							</div>
+							{isEditingNotes ? (
+								<div className="space-y-2">
+									<Textarea
+										value={editingNotesValue}
+										onChange={(e) => setEditingNotesValue(e.target.value)}
+										placeholder="Add some notes to this list..."
+										className="min-h-[80px] text-sm"
+										autoFocus
+									/>
+									<div className="flex justify-end gap-2">
+										<Button size="sm" variant="ghost" onClick={() => setIsEditingNotes(false)}>
+											Cancel
+										</Button>
+										<Button size="sm" onClick={saveListNotes}>
+											Save Notes
+										</Button>
+									</div>
+								</div>
+							) : (
+								<p
+									className="text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded p-1 -ml-1"
 									onClick={() => {
 										setIsEditingNotes(true);
 										setEditingNotesValue(list.notes || "");
 									}}
 								>
-									<Pencil className="w-3 h-3 text-muted-foreground" />
-								</Button>
+									{list.notes}
+								</p>
 							)}
 						</div>
-						{isEditingNotes ? (
-							<div className="space-y-2">
-								<Textarea
-									value={editingNotesValue}
-									onChange={(e) => setEditingNotesValue(e.target.value)}
-									placeholder="Add some notes to this list..."
-									className="min-h-[80px] text-sm"
-									autoFocus
-								/>
-								<div className="flex justify-end gap-2">
-									<Button size="sm" variant="ghost" onClick={() => setIsEditingNotes(false)}>
-										Cancel
-									</Button>
-									<Button size="sm" onClick={saveListNotes}>
-										Save Notes
-									</Button>
-								</div>
-							</div>
-						) : (
-							<p
-								className="text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded p-1 -ml-1"
+					)}
+
+					{!list.notes && !isEditingNotes && (
+						<div className="mt-4">
+							<Button
+								variant="ghost"
+								size="sm"
+								className="h-auto p-1 text-xs text-muted-foreground/60 hover:text-muted-foreground italic font-normal"
 								onClick={() => {
 									setIsEditingNotes(true);
 									setEditingNotesValue(list.notes || "");
 								}}
 							>
-								{list.notes}
-							</p>
-						)}
-					</div>
-				)}
+								<FileText className="w-3 h-3 mr-1.5" />
+								No notes yet. Click to add some.
+							</Button>
+						</div>
+					)}
 
-				{!list.notes && !isEditingNotes && (
-					<div className="mt-4">
-						<Button
-							variant="ghost"
-							size="sm"
-							className="h-auto p-1 text-xs text-muted-foreground/60 hover:text-muted-foreground italic font-normal"
-							onClick={() => {
-								setIsEditingNotes(true);
-								setEditingNotesValue(list.notes || "");
-							}}
-						>
-							<FileText className="w-3 h-3 mr-1.5" />
-							No notes yet. Click to add some.
-						</Button>
-					</div>
-				)}
-
-			</CardContent>
+				</CardContent>
+			)}
 		</Card>
 	);
 }
