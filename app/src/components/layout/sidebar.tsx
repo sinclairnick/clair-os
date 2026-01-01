@@ -1,3 +1,4 @@
+
 import { NavLink, Link, useNavigate } from "react-router";
 import {
 	Home,
@@ -14,10 +15,10 @@ import {
 	X,
 	ExternalLink,
 	BookOpen,
-	Users,
 	User,
 	Bell,
 	DollarSign,
+	Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -42,7 +43,6 @@ const navItems = [
 	{ to: ROUTES.REMINDERS, label: "Reminders", icon: Bell },
 	{ to: ROUTES.BILLS, label: "Bills", icon: DollarSign },
 	{ to: ROUTES.CALENDAR, label: "Calendar", icon: Calendar },
-	{ to: ROUTES.FAMILY_SETTINGS, label: "Family Settings", icon: Users },
 ];
 
 export function Sidebar() {
@@ -69,38 +69,49 @@ export function Sidebar() {
 				</div>
 
 				{families.length > 0 && (
-					<DropdownMenu>
-						<DropdownMenuTrigger render={
-							<Button
-								variant="outline"
-								className="w-full justify-between text-sm bg-background/50"
-								size="sm"
-							>
-								<span className="truncate">{currentFamily?.name || 'Select Family'}</span>
-								<ChevronDown className="w-4 h-4 ml-2 shrink-0 opacity-50" />
-							</Button>
-						} />
-						<DropdownMenuContent align="start" className="w-56">
-							{families.map((family) => (
-								<DropdownMenuItem
-									key={family.id}
-									onClick={() => setCurrentFamilyId(family.id)}
-									className={cn(
-										currentFamily?.id === family.id && "bg-accent"
-									)}
+					<div className="flex items-center gap-2">
+						<DropdownMenu>
+							<DropdownMenuTrigger render={
+								<Button
+									variant="outline"
+									className="w-full justify-between text-sm bg-background/50 flex-1"
+									size="sm"
 								>
-									<span
-										className="w-2 h-2 rounded-full mr-2"
-										style={{ backgroundColor: family.color }}
-									/>
-									{family.name}
-									<span className="ml-auto text-xs text-muted-foreground">
-										{family.role}
-									</span>
-								</DropdownMenuItem>
-							))}
-						</DropdownMenuContent>
-					</DropdownMenu>
+									<span className="truncate">{currentFamily?.name || 'Select Family'}</span>
+									<ChevronDown className="w-4 h-4 ml-2 shrink-0 opacity-50" />
+								</Button>
+							} />
+							<DropdownMenuContent align="start" className="w-56">
+								{families.map((family) => (
+									<DropdownMenuItem
+										key={family.id}
+										onClick={() => setCurrentFamilyId(family.id)}
+										className={cn(
+											currentFamily?.id === family.id && "bg-accent"
+										)}
+									>
+										<span
+											className="w-2 h-2 rounded-full mr-2"
+											style={{ backgroundColor: family.color }}
+										/>
+										{family.name}
+										<span className="ml-auto text-xs text-muted-foreground">
+											{family.role}
+										</span>
+									</DropdownMenuItem>
+								))}
+							</DropdownMenuContent>
+						</DropdownMenu>
+						<Button
+							variant="outline"
+							size="icon"
+							className="h-9 w-9 shrink-0 bg-background/50"
+							onClick={() => navigate(ROUTES.FAMILY_SETTINGS)}
+							title="Family Settings"
+						>
+							<Settings className="w-4 h-4" />
+						</Button>
+					</div>
 				)}
 			</div>
 

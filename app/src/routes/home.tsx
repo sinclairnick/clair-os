@@ -100,7 +100,7 @@ export function HomePage() {
 				<PageHeaderActions>
 					<DropdownMenu>
 						<DropdownMenuTrigger render={
-							<Button>
+							<Button size="sm">
 								<Plus className="w-4 h-4 mr-2" />
 								Create New
 							</Button>
@@ -128,7 +128,7 @@ export function HomePage() {
 				</PageHeaderActions>
 			</PageHeader>
 
-			<CreateShoppingListDialog open={createListOpen} onOpenChange={setCreateListOpen} />
+			<CreateShoppingListDialog open={createListOpen} onOpenChange={setCreateListOpen} defaultPinned={true} />
 			<CreateTaskDialog open={createTaskOpen} onOpenChange={setCreateTaskOpen} />
 			<CreateReminderDialog open={createReminderOpen} onOpenChange={setCreateReminderOpen} />
 

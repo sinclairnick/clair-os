@@ -89,7 +89,7 @@ export function CreateShoppingListDialog({ open, onOpenChange, defaultPinned = f
 							onCheckedChange={(checked) => setIsPinned(checked as boolean)}
 						/>
 						<Label htmlFor="pinned" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-							Pin to Dashboard
+							Pin this list
 						</Label>
 					</div>
 				</div>
