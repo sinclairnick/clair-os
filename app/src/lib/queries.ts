@@ -7,6 +7,7 @@ import {
 	type TaskResponse,
 	type ShoppingItemResponse,
 	type DashboardSummaryResponse,
+	type SearchResponse,
 	ApiError,
 } from './api';
 
@@ -34,6 +35,9 @@ export const queryKeys = {
 	dashboard: {
 		summary: (familyId: string) => ['dashboard', { familyId }] as const,
 	},
+	search: {
+		results: (familyId: string, query: string) => ['search', { familyId, query }] as const,
+	},
 } as const;
 
 // ─────────────────────────────────────────────────────────────
@@ -55,6 +59,29 @@ export function dashboardSummaryQuery<TData = DashboardSummaryResponse>(
 		enabled: !!familyId,
 		...options,
 	} satisfies UseQueryOptions<DashboardSummaryResponse, ApiError, TData>;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Search Queries
+// ─────────────────────────────────────────────────────────────
+
+type SearchQueryOptions<TData = SearchResponse> = Omit<
+	UseQueryOptions<SearchResponse, ApiError, TData>,
+	'queryKey' | 'queryFn'
+>;
+
+export function searchQuery<TData = SearchResponse>(
+	familyId: string,
+	query: string,
+	options?: SearchQueryOptions<TData>
+) {
+	return {
+		queryKey: queryKeys.search.results(familyId, query),
+		queryFn: () => api.search.query(familyId, query),
+		enabled: !!familyId && query.length >= 2,
+		staleTime: 30_000,
+		...options,
+	} satisfies UseQueryOptions<SearchResponse, ApiError, TData>;
 }
 
 

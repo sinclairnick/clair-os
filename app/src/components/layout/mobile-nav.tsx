@@ -9,6 +9,7 @@ import {
 	Users,
 	User,
 	LogOut,
+	Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROUTES } from "@/lib/routes";
@@ -20,37 +21,69 @@ import {
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 
-const navItems = [
-	{ to: ROUTES.HOME, label: "Home", icon: Home },
-	{ to: ROUTES.RECIPES, label: "Recipes", icon: CookingPot },
-	{ to: ROUTES.SHOPPING, label: "Shopping", icon: ShoppingCart },
-	{ to: ROUTES.TASKS, label: "Tasks", icon: CheckSquare },
-];
+interface MobileNavProps {
+	onSearchClick: () => void;
+}
 
-export function MobileNav() {
+export function MobileNav({ onSearchClick }: MobileNavProps) {
 	const { user, signOut } = useAuth();
 
 	return (
 		<nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
 			<div className="flex justify-around items-center h-16 px-2">
-				{navItems.map((item) => (
-					<NavLink
-						key={item.to}
-						to={item.to}
-						end={item.to === "/"}
-						className={({ isActive }) =>
-							cn(
-								"flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[56px]",
-								isActive
-									? "text-primary"
-									: "text-muted-foreground hover:text-foreground"
-							)
-						}
-					>
-						<item.icon className="w-5 h-5" />
-						<span className="text-xs font-medium">{item.label}</span>
-					</NavLink>
-				))}
+				<NavLink
+					to={ROUTES.HOME}
+					end
+					className={({ isActive }) =>
+						cn(
+							"flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[56px]",
+							isActive
+								? "text-primary"
+								: "text-muted-foreground hover:text-foreground"
+						)
+					}
+				>
+					<Home className="w-5 h-5" />
+					<span className="text-xs font-medium">Home</span>
+				</NavLink>
+
+				<button
+					onClick={onSearchClick}
+					className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground min-w-[56px]"
+				>
+					<Search className="w-5 h-5" />
+					<span className="text-xs font-medium">Search</span>
+				</button>
+
+				<NavLink
+					to={ROUTES.RECIPES}
+					className={({ isActive }) =>
+						cn(
+							"flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[56px]",
+							isActive
+								? "text-primary"
+								: "text-muted-foreground hover:text-foreground"
+						)
+					}
+				>
+					<CookingPot className="w-5 h-5" />
+					<span className="text-xs font-medium">Recipes</span>
+				</NavLink>
+
+				<NavLink
+					to={ROUTES.SHOPPING}
+					className={({ isActive }) =>
+						cn(
+							"flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[56px]",
+							isActive
+								? "text-primary"
+								: "text-muted-foreground hover:text-foreground"
+						)
+					}
+				>
+					<ShoppingCart className="w-5 h-5" />
+					<span className="text-xs font-medium">Shopping</span>
+				</NavLink>
 
 				<Popover>
 					<PopoverTrigger render={
@@ -61,6 +94,18 @@ export function MobileNav() {
 					} />
 					<PopoverContent align="end" side="top" className="w-56 p-2">
 						<div className="grid gap-1">
+							<NavLink
+								to={ROUTES.TASKS}
+								className={({ isActive }) =>
+									cn(
+										"flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+										isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted"
+									)
+								}
+							>
+								<CheckSquare className="w-4 h-4" />
+								Tasks
+							</NavLink>
 							<NavLink
 								to={ROUTES.CALENDAR}
 								className={({ isActive }) =>

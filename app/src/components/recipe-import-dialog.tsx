@@ -197,14 +197,19 @@ function parseRecipeText(text: string): ParsedRecipe {
 
 interface RecipeImportDialogProps {
 	trigger?: React.ReactElement;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
 }
 
-export function RecipeImportDialog({ trigger }: RecipeImportDialogProps) {
+export function RecipeImportDialog({ trigger, open: controlledOpen, onOpenChange: controlledOnOpenChange }: RecipeImportDialogProps) {
 	const navigate = useNavigate();
 	const familyId = useCurrentFamilyId();
 	const queryClient = useQueryClient();
 
-	const [open, setOpen] = useState(false);
+	const [internalOpen, setInternalOpen] = useState(false);
+	const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+	const setOpen = controlledOnOpenChange !== undefined ? controlledOnOpenChange : setInternalOpen;
+
 	const [tab, setTab] = useState<"text" | "url" | "photo">("text");
 	const [textInput, setTextInput] = useState("");
 	const [urlInput, setUrlInput] = useState("");

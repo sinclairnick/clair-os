@@ -68,6 +68,26 @@ export async function checkPermission(
 	return result.allowed ?? false;
 }
 
+// Check multiple permissions at once
+export async function batchCheckPermissions(
+	userId: string,
+	checks: Array<{ permission: Permission; resourceType: ResourceType; resourceId: string }>
+): Promise<boolean[]> {
+	if (checks.length === 0) return [];
+	const client = await getOpenFgaClient();
+
+	// Use batchCheck for improved performance and atomicity
+	const results = await client.batchCheck({
+		checks: checks.map((c) => ({
+			user: `user:${userId}`,
+			relation: c.permission,
+			object: `${c.resourceType}:${c.resourceId}`,
+		})),
+	});
+
+	return results.result.map((r) => r.allowed ?? false);
+}
+
 // Grant a relationship (e.g., make user an admin of family)
 export async function grantRelation(
 	subjectType: 'user' | 'family',

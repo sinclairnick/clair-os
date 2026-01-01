@@ -236,6 +236,14 @@ export interface FamilyMemberResponse {
 	image?: string;
 }
 
+export interface SearchResponse {
+	recipes: RecipeResponse[];
+	shoppingLists: (ShoppingListResponse & { itemCount: number })[];
+	tasks: TaskResponse[];
+	reminders: ReminderResponse[];
+	bills: BillResponse[];
+}
+
 export interface JoinFamilyResponse {
 	success: boolean;
 	familyId: string;
@@ -595,6 +603,11 @@ export const api = {
 			apiFetch<DashboardSummaryResponse>('/dashboard', { params: { familyId } }),
 	},
 
+	// Universal Search
+	search: {
+		query: (familyId: string, q: string) =>
+			apiFetch<SearchResponse>('/search', { params: { familyId, q } }),
+	},
 };
 
 export { ApiError };

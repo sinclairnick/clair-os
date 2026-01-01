@@ -19,6 +19,7 @@ import {
 	Bell,
 	DollarSign,
 	Settings,
+	Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -45,7 +46,11 @@ const navItems = [
 	{ to: ROUTES.CALENDAR, label: "Calendar", icon: Calendar },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+	onSearchClick: () => void;
+}
+
+export function Sidebar({ onSearchClick }: SidebarProps) {
 	const navigate = useNavigate();
 	const { user, families, currentFamily, setCurrentFamilyId, signOut } = useAuth();
 	const { timers, startTimer, pauseTimer, resetTimer, removeTimer } = useTimerStore();
@@ -113,6 +118,20 @@ export function Sidebar() {
 						</Button>
 					</div>
 				)}
+
+				<div className="mt-4">
+					<Button
+						variant="outline"
+						className="w-full justify-start gap-2 h-9 px-3 bg-background/50 text-muted-foreground border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group"
+						onClick={onSearchClick}
+					>
+						<Search className="w-4 h-4" />
+						<span className="text-sm font-normal">Search...</span>
+						<kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 group-hover:bg-accent group-hover:text-accent-foreground">
+							<span className="text-xs">⌘</span>K
+						</kbd>
+					</Button>
+				</div>
 			</div>
 
 			{/* Navigation */}

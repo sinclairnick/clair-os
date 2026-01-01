@@ -14,6 +14,7 @@ import { storageRouter } from './routes/storage.ts';
 import { remindersRouter } from './routes/reminders.ts';
 import { billsRouter } from './routes/bills.ts';
 import { dashboardRouter } from './routes/dashboard.ts';
+import { searchRouter } from './routes/search.ts';
 import { configureSidequest } from './jobs/index.ts';
 
 // Define custom context variables
@@ -75,6 +76,7 @@ app.route('/api/push', pushRouter);
 app.route('/api/reminders', remindersRouter);
 app.route('/api/bills', billsRouter);
 app.route('/api/dashboard', dashboardRouter);
+app.route('/api/search', searchRouter);
 
 const port = parseInt(process.env.PORT || '3001', 10);
 

@@ -1,9 +1,10 @@
 import { useNavigate, Navigate, Outlet, useLocation } from "react-router";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { NuqsAdapter } from 'nuqs/adapters/react'
 import { useAuth } from "@/components/auth-provider";
 import { Sidebar } from "./sidebar";
 import { MobileNav } from "./mobile-nav";
+import { CommandPalette } from "@/components/command-palette";
 import { checkTimerCompletions, useTimerStore } from "@/lib/timer-store";
 import { toast } from "sonner";
 import { Bell } from "lucide-react";
@@ -61,6 +62,20 @@ export function AppLayout() {
 	const { currentFamily, families, isLoading } = useAuth();
 	const location = useLocation();
 	const navigate = useNavigate();
+	const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+	// CMD+K Shortcut
+	useEffect(() => {
+		const down = (e: KeyboardEvent) => {
+			if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+				e.preventDefault();
+				setCommandPaletteOpen((open: boolean) => !open);
+			}
+		};
+
+		document.addEventListener("keydown", down);
+		return () => document.removeEventListener("keydown", down);
+	}, []);
 
 	// Global timer ticker
 	useEffect(() => {
@@ -124,7 +139,7 @@ export function AppLayout() {
 					{/* Desktop Sidebar */}
 					<aside className="hidden md:flex md:w-64 md:flex-shrink-0">
 						<div className="flex flex-col w-full bg-sidebar border-r border-sidebar-border h-full">
-							<Sidebar />
+							<Sidebar onSearchClick={() => setCommandPaletteOpen(true)} />
 						</div>
 					</aside>
 
@@ -138,10 +153,15 @@ export function AppLayout() {
 
 				{/* Mobile bottom nav */}
 				<div className="md:hidden">
-					<MobileNav />
+					<MobileNav onSearchClick={() => setCommandPaletteOpen(true)} />
 				</div>
 
 				<PushPrompt />
+
+				<CommandPalette
+					open={commandPaletteOpen}
+					onOpenChange={setCommandPaletteOpen}
+				/>
 			</div>
 		</NuqsAdapter>
 	);
