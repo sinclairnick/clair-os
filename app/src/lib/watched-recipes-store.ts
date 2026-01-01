@@ -4,8 +4,10 @@ import { persist } from 'zustand/middleware';
 export interface WatchedRecipe {
 	id: string;
 	title: string;
+	imageUrl?: string | null;
 	checkedIngredients: number[];
 	checkedInstructions: string[];
+	totalInstructions: number;
 	scaleFactor: number;
 	addedAt: number;
 	explicit: boolean; // true if user clicked minimize, false if auto-added via interaction
@@ -15,16 +17,16 @@ interface WatchedRecipesState {
 	recipes: Record<string, WatchedRecipe>;
 
 	// Actions
-	addRecipe: (recipe: { id: string; title: string; explicit?: boolean }) => void;
+	addRecipe: (recipe: { id: string; title: string; imageUrl?: string | null; totalInstructions?: number; explicit?: boolean }) => void;
 	updateRecipe: (id: string, updates: Partial<Omit<WatchedRecipe, 'id' | 'addedAt'>>) => void;
 	removeRecipe: (id: string) => void;
 	isWatched: (id: string) => boolean;
 	getRecipe: (id: string) => WatchedRecipe | undefined;
 
 	// Convenience methods for interaction tracking
-	toggleIngredient: (recipeId: string, recipeTitle: string, ingredientIndex: number) => void;
-	toggleInstruction: (recipeId: string, recipeTitle: string, instructionId: string) => void;
-	setScaleFactor: (recipeId: string, recipeTitle: string, factor: number) => void;
+	toggleIngredient: (recipeId: string, recipeTitle: string, imageUrl: string | null | undefined, ingredientIndex: number) => void;
+	toggleInstruction: (recipeId: string, recipeTitle: string, imageUrl: string | null | undefined, instructionId: string, totalInstructions: number) => void;
+	setScaleFactor: (recipeId: string, recipeTitle: string, imageUrl: string | null | undefined, factor: number) => void;
 }
 
 export const useWatchedRecipesStore = create<WatchedRecipesState>()(
@@ -32,15 +34,17 @@ export const useWatchedRecipesStore = create<WatchedRecipesState>()(
 		(set, get) => ({
 			recipes: {},
 
-			addRecipe: ({ id, title, explicit = false }) => {
+			addRecipe: ({ id, title, imageUrl, totalInstructions = 0, explicit = false }) => {
 				set((state) => ({
 					recipes: {
 						...state.recipes,
 						[id]: {
 							id,
 							title,
+							imageUrl,
 							checkedIngredients: [],
 							checkedInstructions: [],
+							totalInstructions,
 							scaleFactor: 1,
 							addedAt: Date.now(),
 							explicit,
@@ -79,7 +83,7 @@ export const useWatchedRecipesStore = create<WatchedRecipesState>()(
 			},
 
 			// Toggle ingredient check - auto-adds recipe to watched if not already
-			toggleIngredient: (recipeId, recipeTitle, ingredientIndex) => {
+			toggleIngredient: (recipeId, recipeTitle, imageUrl, ingredientIndex) => {
 				set((state) => {
 					let recipe = state.recipes[recipeId];
 
@@ -88,8 +92,10 @@ export const useWatchedRecipesStore = create<WatchedRecipesState>()(
 						recipe = {
 							id: recipeId,
 							title: recipeTitle,
+							imageUrl,
 							checkedIngredients: [],
 							checkedInstructions: [],
+							totalInstructions: state.recipes[recipeId]?.totalInstructions || 0,
 							scaleFactor: 1,
 							addedAt: Date.now(),
 							explicit: false,
@@ -114,7 +120,7 @@ export const useWatchedRecipesStore = create<WatchedRecipesState>()(
 			},
 
 			// Toggle instruction check - auto-adds recipe to watched if not already  
-			toggleInstruction: (recipeId, recipeTitle, instructionId) => {
+			toggleInstruction: (recipeId, recipeTitle, imageUrl, instructionId, totalInstructions) => {
 				set((state) => {
 					let recipe = state.recipes[recipeId];
 
@@ -122,8 +128,10 @@ export const useWatchedRecipesStore = create<WatchedRecipesState>()(
 						recipe = {
 							id: recipeId,
 							title: recipeTitle,
+							imageUrl,
 							checkedIngredients: [],
 							checkedInstructions: [],
+							totalInstructions,
 							scaleFactor: 1,
 							addedAt: Date.now(),
 							explicit: false,
@@ -141,14 +149,14 @@ export const useWatchedRecipesStore = create<WatchedRecipesState>()(
 					return {
 						recipes: {
 							...state.recipes,
-							[recipeId]: { ...recipe, checkedInstructions: checked },
+							[recipeId]: { ...recipe, checkedInstructions: checked, totalInstructions },
 						},
 					};
 				});
 			},
 
 			// Set scale factor - auto-adds recipe to watched if not already
-			setScaleFactor: (recipeId, recipeTitle, factor) => {
+			setScaleFactor: (recipeId, recipeTitle, imageUrl, factor) => {
 				set((state) => {
 					let recipe = state.recipes[recipeId];
 
@@ -156,8 +164,10 @@ export const useWatchedRecipesStore = create<WatchedRecipesState>()(
 						recipe = {
 							id: recipeId,
 							title: recipeTitle,
+							imageUrl,
 							checkedIngredients: [],
 							checkedInstructions: [],
+							totalInstructions: state.recipes[recipeId]?.totalInstructions || 0,
 							scaleFactor: 1,
 							addedAt: Date.now(),
 							explicit: false,

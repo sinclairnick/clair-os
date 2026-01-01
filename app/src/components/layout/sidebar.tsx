@@ -16,7 +16,6 @@ import {
 	BookOpen,
 	Users,
 	User,
-	ChevronRight,
 	Bell,
 	DollarSign,
 } from "lucide-react";
@@ -209,40 +208,60 @@ export function Sidebar() {
 						</h3>
 						<div className="space-y-1 px-1">
 							{watchedRecipesList.map((recipe) => {
-								const checkedCount = recipe.checkedIngredients.length;
+								const progress = recipe.totalInstructions > 0
+									? Math.round((recipe.checkedInstructions.length / recipe.totalInstructions) * 100)
+									: 0;
+
 								return (
 									<div
 										key={recipe.id}
-										className="p-2 rounded-md bg-sidebar-accent/50 border border-sidebar-border group relative"
+										className="group relative flex items-center gap-3 py-2 pl-2 pr-1 rounded-lg hover:bg-sidebar-accent transition-all duration-200"
 									>
-										<div className="flex items-center justify-between">
-											<Link
-												to={ROUTES.RECIPE_DETAIL(recipe.id)}
-												className="flex items-center gap-1 text-xs font-medium text-sidebar-foreground hover:text-primary truncate pr-6"
-												title={recipe.title}
-											>
-												<span className="truncate max-w-[170px]">{recipe.title}</span>
-												<ChevronRight className="w-2.5 h-2.5 shrink-0 opacity-50" />
-											</Link>
-											<button
-												onClick={() => removeRecipe(recipe.id)}
-												className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-0.5 hover:bg-sidebar-accent rounded-full text-sidebar-foreground/50 hover:text-sidebar-foreground transition-all"
-												title="Dismiss"
-											>
-												<X className="w-3 h-3" />
-											</button>
-										</div>
-										<div className="flex items-center gap-2 mt-1 text-[10px] text-sidebar-foreground/60">
-											{checkedCount > 0 && (
-												<span>{checkedCount} checked</span>
-											)}
-											{recipe.scaleFactor !== 1 && (
-												<span className="text-primary font-medium">{recipe.scaleFactor}x</span>
-											)}
-											{recipe.explicit && (
-												<span className="bg-primary/20 text-primary px-1 rounded">pinned</span>
-											)}
-										</div>
+										<Link
+											to={ROUTES.RECIPE_DETAIL(recipe.id)}
+											className="flex-1 flex items-center gap-2.5 min-w-0"
+											title={recipe.title}
+										>
+											<div className="relative h-9 w-9 rounded-md bg-muted overflow-hidden flex-shrink-0 border border-sidebar-border/50 shadow-sm">
+												{recipe.imageUrl ? (
+													<img src={recipe.imageUrl} alt={recipe.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" />
+												) : (
+													<div className="h-full w-full flex items-center justify-center bg-background/50 text-muted-foreground/30">
+														<CookingPot className="w-5 h-5" />
+													</div>
+												)}
+
+												{/* Progress Overlay (Visible when not hovered) */}
+												{progress > 0 && (
+													<div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:opacity-0 transition-opacity">
+														<span className="text-[10px] font-bold text-white drop-shadow-md">
+															{progress}%
+														</span>
+													</div>
+												)}
+
+												{/* Close Button Overlay (Visible on hover) */}
+												<button
+													onClick={(e) => {
+														e.preventDefault();
+														e.stopPropagation();
+														removeRecipe(recipe.id);
+													}}
+													className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+													title="Dismiss"
+												>
+													<X className="w-4 h-4 text-white" />
+												</button>
+											</div>
+											<div className="flex-1 min-w-0">
+												<p className="text-[13px] leading-[1.3] font-medium text-sidebar-foreground line-clamp-2 group-hover:text-primary transition-colors">
+													{recipe.title}
+												</p>
+												{recipe.scaleFactor !== 1 && (
+													<p className="text-[10px] text-primary font-bold mt-0.5">{recipe.scaleFactor}x</p>
+												)}
+											</div>
+										</Link>
 									</div>
 								);
 							})}

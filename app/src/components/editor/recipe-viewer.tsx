@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { BlockNoteSchema, defaultInlineContentSpecs } from '@blocknote/core';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/shadcn';
@@ -25,6 +25,8 @@ interface RecipeViewerProps {
 	content: string; // JSON string of BlockNote blocks
 	className?: string;
 	recipeId: string;
+	checkedInstructions?: string[];
+	onToggleInstruction?: (id: string, totalCount: number) => void;
 	onIngredientHover?: (name: string | null) => void;
 }
 
@@ -32,11 +34,19 @@ interface RecipeViewerProps {
  * Read-only viewer for BlockNote recipe content.
  * Renders the BlockNote JSON with interactive timers.
  */
-export function RecipeViewer({ content, className, recipeId, onIngredientHover }: RecipeViewerProps) {
-	// Parse the content
-	const initialContent = useMemo(() => {
-		if (!content) return undefined;
+export function RecipeViewer({
+	content,
+	className,
+	recipeId,
+	checkedInstructions = [],
+	onToggleInstruction,
+	onIngredientHover
+}: RecipeViewerProps) {
+	// Parse the content and count instructions
+	const { initialContent, totalInstructions } = useMemo(() => {
+		if (!content) return { initialContent: undefined, totalInstructions: 0 };
 
+		let totalCount = 0;
 		try {
 			const parsed = JSON.parse(content);
 			if (Array.isArray(parsed)) {
@@ -44,6 +54,11 @@ export function RecipeViewer({ content, className, recipeId, onIngredientHover }
 				let timerIndex = 0;
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				const traverse = (node: any) => {
+					// Count headings as instructions
+					if (node.type === 'heading') {
+						totalCount++;
+					}
+
 					if (node.type === 'timerMention') {
 						if (!node.props) node.props = {};
 						// Assign a stable ID based on recipe and index
@@ -60,20 +75,50 @@ export function RecipeViewer({ content, className, recipeId, onIngredientHover }
 				};
 
 				parsed.forEach(traverse);
-				return parsed;
+				return { initialContent: parsed, totalInstructions: totalCount };
 			}
 		} catch {
 			// Not valid JSON - might be old HTML content
-			// Return undefined to show empty state
 		}
 
-		return undefined;
+		return { initialContent: undefined, totalInstructions: 0 };
 	}, [content, recipeId]);
 
 	const editor = useCreateBlockNote({
 		schema,
 		initialContent,
 	});
+
+	// Efficiently sync the checked state to the DOM
+	useEffect(() => {
+		if (!checkedInstructions) return;
+
+		// We use a small timeout to ensure the editor has finished rendering
+		const syncCheckedState = () => {
+			// Clear all existing checked classes first
+			const checkedElements = document.querySelectorAll('.recipe-viewer-checkable .is-checked');
+			checkedElements.forEach(el => el.classList.remove('is-checked'));
+
+			// Apply is-checked to matching blocks
+			checkedInstructions.forEach(id => {
+				const elements = document.querySelectorAll(`.recipe-viewer-checkable [data-id="${id}"]`);
+				elements.forEach(element => {
+					element.classList.add('is-checked');
+					const blocks = element.querySelectorAll('.bn-block');
+					blocks.forEach(b => b.classList.add('is-checked'));
+				});
+			});
+		};
+
+		// Initial sync
+		const timer = setTimeout(syncCheckedState, 150);
+		const backupTimer = setTimeout(syncCheckedState, 500);
+
+		return () => {
+			clearTimeout(timer);
+			clearTimeout(backupTimer);
+		};
+	}, [recipeId]); // Only full sync when recipe changes
 
 	// Handle hover for ingredients highlighting
 	const handleMouseOver = (e: React.MouseEvent) => {
@@ -127,9 +172,24 @@ export function RecipeViewer({ content, className, recipeId, onIngredientHover }
 
 		const heading = target.closest('h1, h2, h3');
 		if (heading) {
-			const block = heading.closest('.bn-block');
-			if (block) {
-				block.classList.toggle('is-checked');
+			const blockElement = heading.closest('[data-id]') as HTMLElement;
+			if (blockElement && onToggleInstruction) {
+				const blockId = blockElement.dataset.id;
+				if (blockId) {
+					// 1. Immediate UI update (Uncontrolled)
+					const isChecking = !blockElement.classList.contains('is-checked');
+
+					if (isChecking) {
+						blockElement.classList.add('is-checked');
+						blockElement.querySelectorAll('.bn-block').forEach(b => b.classList.add('is-checked'));
+					} else {
+						blockElement.classList.remove('is-checked');
+						blockElement.querySelectorAll('.bn-block').forEach(b => b.classList.remove('is-checked'));
+					}
+
+					// 2. Notify parent with the actual state change
+					onToggleInstruction(blockId, totalInstructions);
+				}
 			}
 		}
 	};
