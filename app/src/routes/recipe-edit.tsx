@@ -5,7 +5,6 @@ import { useForm, useFieldArray, FormProvider } from "react-hook-form";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type RecipeEditorRef, type IngredientMention } from "@/components/editor";
-import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { useCurrentFamilyId } from "@/components/auth-provider";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/queries";
@@ -55,12 +54,12 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 	const formTitle = form.watch("title");
 	const pageTitle = isNew ? "New Recipe" : `Edit ${formTitle || "Recipe"}`;
 
-	const { fields: ingredientFields, append: appendIngredient, remove: removeIngredientField, move: moveIngredientField } = useFieldArray({
+	const { fields: ingredientFields, append: appendIngredient, remove: removeIngredientField } = useFieldArray({
 		control: form.control,
 		name: "ingredients",
 	});
 
-	const { fields: groupFields, append: appendGroup, remove: removeGroup, move: moveGroup } = useFieldArray({
+	const { fields: groupFields, append: appendGroup, remove: removeGroup } = useFieldArray({
 		control: form.control,
 		name: "ingredientGroups",
 	});
@@ -103,52 +102,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 		}
 	}, [recipe, form]);
 
-	// Drag and Drop Monitor
-	useEffect(() => {
-		return monitorForElements({
-			onDrop({ source, location }) {
-				const destination = location.current.dropTargets[0];
-				if (!destination) return;
 
-				const sourceData = source.data;
-				const destinationData = destination.data;
-
-				// Ingredient reordering/moving
-				if (sourceData.type === "ingredient") {
-					const sourceIndex = sourceData.index as number;
-
-					// Dropped on another ingredient -> reorder
-					if (destinationData.type === "ingredient") {
-						const destinationIndex = destinationData.index as number;
-						if (sourceIndex !== destinationIndex) {
-							moveIngredientField(sourceIndex, destinationIndex);
-							// Also update groupId to match the destination's group
-							const destGroupId = destinationData.groupId as string | null;
-							form.setValue(`ingredients.${destinationIndex}.groupId`, destGroupId);
-						}
-					}
-					// Dropped on a group section area -> move to that group
-					else if (destinationData.type === "group") {
-						const destGroupId = destinationData.groupId as string | null;
-						form.setValue(`ingredients.${sourceIndex}.groupId`, destGroupId);
-						// Move to end of array to appear last in the group
-						moveIngredientField(sourceIndex, ingredientFields.length - 1);
-					}
-				}
-
-				// Group reordering
-				if (sourceData.type === "group") {
-					const sourceIndex = sourceData.index as number;
-					if (destinationData.type === "group") {
-						const destinationIndex = destinationData.index as number;
-						if (sourceIndex !== destinationIndex) {
-							moveGroup(sourceIndex, destinationIndex);
-						}
-					}
-				}
-			},
-		});
-	}, [moveIngredientField, moveGroup, form, ingredientFields.length]);
 
 	const saveMutation = useMutation({
 		mutationFn: async (data: RecipeFormData) => {

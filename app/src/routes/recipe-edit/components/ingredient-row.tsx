@@ -1,10 +1,7 @@
-import { useRef, useEffect, useState } from "react";
 import { useFormContext, Controller, useWatch } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X, GripVertical } from "lucide-react";
-import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import { cn } from "@/lib/utils";
+import { X } from "lucide-react";
 
 interface IngredientRowProps {
 	index: number;
@@ -15,73 +12,15 @@ interface IngredientRowProps {
 
 export function IngredientRow({ index, onRemove, ingredientIdToFocus, onFocusHandled }: IngredientRowProps) {
 	const { control } = useFormContext();
-	const ref = useRef<HTMLDivElement>(null);
-	const dragHandleRef = useRef<HTMLDivElement>(null);
-	const [isDraggedOver, setIsDraggedOver] = useState(false);
-	const [isDragging, setIsDragging] = useState(false);
-
-	// Targeted watch for this specific ingredient to avoid top-level re-renders
-	// and ensure we have the data for DND logic
 	const ingredient = useWatch({
 		control,
 		name: `ingredients.${index}`,
 	});
 
-	useEffect(() => {
-		const el = ref.current;
-		const dragHandle = dragHandleRef.current;
-		if (!el || !dragHandle || !ingredient) return;
-
-		const d = draggable({
-			element: el,
-			dragHandle: dragHandle,
-			getInitialData: () => ({
-				type: "ingredient",
-				index,
-				groupId: ingredient.groupId,
-				id: ingredient.id
-			}),
-			onDragStart: () => setIsDragging(true),
-			onDrop: () => setIsDragging(false),
-		});
-
-		const dt = dropTargetForElements({
-			element: el,
-			getData: () => ({
-				type: "ingredient",
-				index,
-				groupId: ingredient.groupId,
-				id: ingredient.id
-			}),
-			onDragEnter: () => setIsDraggedOver(true),
-			onDragLeave: () => setIsDraggedOver(false),
-			onDrop: () => setIsDraggedOver(false),
-		});
-
-		return () => {
-			d();
-			dt();
-		};
-	}, [index, ingredient?.groupId, ingredient?.id]);
-
 	if (!ingredient) return null;
 
 	return (
-		<div
-			ref={ref}
-			className={cn(
-				"flex items-center gap-1.5 md:gap-2 p-1.5 md:p-1 rounded-md transition-colors relative",
-				isDraggedOver && "bg-accent/20 border-t-2 border-accent",
-				isDragging && "opacity-50"
-			)}
-		>
-			<div
-				ref={dragHandleRef}
-				className="cursor-grab active:cursor-grabbing min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 md:p-1 flex items-center justify-center hover:bg-muted rounded text-muted-foreground shrink-0"
-				style={{ touchAction: 'none' }}
-			>
-				<GripVertical className="w-5 h-5 md:w-4 md:h-4" />
-			</div>
+		<div className="flex items-center gap-1.5 md:gap-2 p-1.5 md:p-1 rounded-md">
 			<Controller
 				name={`ingredients.${index}.quantity`}
 				control={control}
