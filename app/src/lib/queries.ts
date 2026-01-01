@@ -6,6 +6,7 @@ import {
 	type ShoppingListResponse,
 	type TaskResponse,
 	type ShoppingItemResponse,
+	type DashboardSummaryResponse,
 	ApiError,
 } from './api';
 
@@ -30,7 +31,32 @@ export const queryKeys = {
 		all: (familyId: string, status?: string) => ['tasks', { familyId, status }] as const,
 		detail: (id: string) => ['tasks', id] as const,
 	},
+	dashboard: {
+		summary: (familyId: string) => ['dashboard', { familyId }] as const,
+	},
 } as const;
+
+// ─────────────────────────────────────────────────────────────
+// Dashboard Queries
+// ─────────────────────────────────────────────────────────────
+
+type DashboardSummaryQueryOptions<TData = DashboardSummaryResponse> = Omit<
+	UseQueryOptions<DashboardSummaryResponse, ApiError, TData>,
+	'queryKey' | 'queryFn'
+>;
+
+export function dashboardSummaryQuery<TData = DashboardSummaryResponse>(
+	familyId: string,
+	options?: DashboardSummaryQueryOptions<TData>
+) {
+	return {
+		queryKey: queryKeys.dashboard.summary(familyId),
+		queryFn: () => api.dashboard.getSummary(familyId),
+		enabled: !!familyId,
+		...options,
+	} satisfies UseQueryOptions<DashboardSummaryResponse, ApiError, TData>;
+}
+
 
 // ─────────────────────────────────────────────────────────────
 // Family Queries

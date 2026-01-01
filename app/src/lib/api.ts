@@ -59,6 +59,14 @@ async function apiFetch<T>(
 // Type definitions for API responses
 // ─────────────────────────────────────────────────────────────
 
+export interface DashboardSummaryResponse {
+	recentRecipes: RecipeResponse[];
+	upcomingReminders: ReminderResponse[];
+	outstandingTasks: TaskResponse[];
+	activeShoppingLists: ShoppingListResponse[];
+	upcomingBills: BillResponse[];
+}
+
 export interface UserResponse {
 	id: string;
 	email: string;
@@ -566,6 +574,13 @@ export const api = {
 		delete: (id: string) =>
 			apiFetch<{ success: boolean }>(`/bills/${id}`, { method: 'DELETE' }),
 	},
+
+	// Dashboard
+	dashboard: {
+		getSummary: (familyId: string) =>
+			apiFetch<DashboardSummaryResponse>('/dashboard', { params: { familyId } }),
+	},
+
 };
 
 export { ApiError };
