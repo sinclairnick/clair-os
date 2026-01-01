@@ -23,7 +23,7 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "@/components/ui/tabs";
-import { Plus, Loader2, ShoppingBag, CheckCircle, Trash2, MoreVertical, Pencil, FileText, LayoutGrid, List as ListIcon } from "lucide-react";
+import { Plus, Loader2, ShoppingBag, CheckCircle, Trash2, MoreVertical, Pencil, FileText, LayoutGrid, List as ListIcon, Pin, PinOff } from "lucide-react";
 import { useCurrentFamilyId } from "@/components/auth-provider";
 import {
 	shoppingListsQuery,
@@ -40,6 +40,7 @@ import { PageTitle } from "@/components/page-title";
 import { PageHeader, PageHeaderHeading, PageHeaderActions } from "@/components/page-header";
 import { Textarea } from "@/components/ui/textarea";
 import { inferCategory, GROCERY_CATEGORIES } from "@clairos/shared";
+import { cn } from "@/lib/utils";
 import { ItemRow } from "./shopping-item-row";
 
 export function ShoppingPage() {
@@ -330,6 +331,7 @@ export function ShoppingPage() {
 											</div>
 										) : (
 											<CardTitle className="text-lg flex items-center gap-2">
+												{list.pinned && <Pin className="w-3.5 h-3.5 text-primary fill-primary" />}
 												{list.name}
 												<Button
 													size="icon"
@@ -343,6 +345,17 @@ export function ShoppingPage() {
 										)}
 
 										<div className="flex items-center gap-2">
+											<Button
+												size="icon"
+												variant="ghost"
+												className={cn(
+													"h-8 w-8",
+													list.pinned ? "text-primary" : "text-muted-foreground"
+												)}
+												onClick={() => updateListMutation.mutate({ id: list.id, pinned: !list.pinned })}
+											>
+												{list.pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+											</Button>
 											<Tabs
 												value={listViewModes[list.id] || "inline"}
 												onValueChange={(val) => setListViewModes(prev => ({ ...prev, [list.id]: val as "inline" | "sectioned" }))}
@@ -368,6 +381,10 @@ export function ShoppingPage() {
 													</Button>
 												</DropdownMenuTrigger>
 												<DropdownMenuContent align="end">
+													<DropdownMenuItem onClick={() => updateListMutation.mutate({ id: list.id, pinned: !list.pinned })}>
+														{list.pinned ? <PinOff className="w-4 h-4 mr-2" /> : <Pin className="w-4 h-4 mr-2" />}
+														{list.pinned ? 'Unpin' : 'Pin to Home'}
+													</DropdownMenuItem>
 													<DropdownMenuItem onClick={() => startEditingList(list)}>
 														<Pencil className="w-4 h-4 mr-2" />
 														Rename

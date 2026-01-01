@@ -1,0 +1,1 @@
+ALTER TABLE "shopping_lists" ADD COLUMN "pinned" boolean DEFAULT false NOT NULL;

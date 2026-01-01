@@ -64,6 +64,7 @@ export interface DashboardSummaryResponse {
 	upcomingReminders: ReminderResponse[];
 	outstandingTasks: TaskResponse[];
 	activeShoppingLists: ShoppingListResponse[];
+	pinnedShoppingLists: ShoppingListResponse[];
 	upcomingBills: BillResponse[];
 }
 
@@ -171,6 +172,7 @@ export interface ShoppingListResponse {
 	familyId: string;
 	name: string;
 	status: 'active' | 'completed' | 'archived';
+	pinned: boolean;
 	createdAt: string;
 	completedAt?: string;
 	notes?: string | null;
@@ -437,7 +439,7 @@ export const api = {
 					method: 'POST',
 					body: JSON.stringify(data),
 				}),
-			update: (id: string, data: { name?: string; notes?: string | null }) =>
+			update: (id: string, data: { name?: string; notes?: string | null; pinned?: boolean }) =>
 				apiFetch<ShoppingListResponse>(`/shopping/lists/${id}`, {
 					method: 'PATCH',
 					body: JSON.stringify(data),

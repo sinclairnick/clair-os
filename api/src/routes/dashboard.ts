@@ -20,6 +20,7 @@ dashboardRouter.get('/', async (c) => {
 		upcomingReminders,
 		outstandingTasks,
 		activeShoppingLists,
+		pinnedShoppingLists,
 		upcomingBills
 	] = await Promise.all([
 		// 1. Recent Recipes
@@ -35,7 +36,7 @@ dashboardRouter.get('/', async (c) => {
 				eq(reminders.familyId, familyId),
 				eq(reminders.dismissed, false),
 			),
-			orderBy: [desc(reminders.remindAt)], // We might want asc for "upcoming", but let's see
+			orderBy: [desc(reminders.remindAt)],
 			limit: 5,
 		}),
 
@@ -55,23 +56,39 @@ dashboardRouter.get('/', async (c) => {
 			}
 		}),
 
-		// 4. Active Shopping Lists
+		// 4. Active (Non-Pinned) Shopping Lists
 		db.query.shoppingLists.findMany({
 			where: and(
 				eq(shoppingLists.familyId, familyId),
-				eq(shoppingLists.status, 'active')
+				eq(shoppingLists.status, 'active'),
+				eq(shoppingLists.pinned, false)
 			),
 			orderBy: [desc(shoppingLists.createdAt)],
 			limit: 5,
 			with: {
 				items: {
 					where: (items, { eq }) => eq(items.checked, false),
-					limit: 3, // Just preview a few
+					limit: 3,
 				}
 			}
 		}),
 
-		// 5. Upcoming Bills
+		// 5. Pinned Shopping Lists (Full items)
+		db.query.shoppingLists.findMany({
+			where: and(
+				eq(shoppingLists.familyId, familyId),
+				eq(shoppingLists.status, 'active'),
+				eq(shoppingLists.pinned, true)
+			),
+			orderBy: [desc(shoppingLists.createdAt)],
+			with: {
+				items: {
+					orderBy: (items, { asc }) => [asc(items.sortOrder)],
+				}
+			}
+		}),
+
+		// 6. Upcoming Bills
 		db.query.bills.findMany({
 			where: and(
 				eq(bills.familyId, familyId),
@@ -83,9 +100,6 @@ dashboardRouter.get('/', async (c) => {
 	]);
 
 	// Re-sort reminders to be truly "next up" (closest future dates first, then overdue)
-	// Actually, for "Upcoming", we usually want: Overdue first, then nearest future.
-	// The DB query above just grabbed 5. Let's refine the DB query for reminders if needed,
-	// but simple sort here is fine for MVP.
 	upcomingReminders.sort((a, b) => new Date(a.remindAt).getTime() - new Date(b.remindAt).getTime());
 
 	// Sort bills by due date ascending (soonest due first)
@@ -96,6 +110,7 @@ dashboardRouter.get('/', async (c) => {
 		upcomingReminders,
 		outstandingTasks,
 		activeShoppingLists,
+		pinnedShoppingLists,
 		upcomingBills
 	});
 });

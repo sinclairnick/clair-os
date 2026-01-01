@@ -30,6 +30,7 @@ shoppingRouter.get('/lists', async (c) => {
 const createListSchema = z.object({
 	familyId: z.string().uuid(),
 	name: z.string().min(1).max(100),
+	pinned: z.boolean().optional().default(false),
 });
 
 shoppingRouter.post('/lists', zValidator('json', createListSchema), async (c) => {
@@ -152,6 +153,7 @@ shoppingRouter.delete('/lists/:id', async (c) => {
 const updateListSchema = z.object({
 	name: z.string().min(1).max(100).optional(),
 	notes: z.string().optional().nullable(),
+	pinned: z.boolean().optional(),
 });
 
 shoppingRouter.patch('/lists/:id', zValidator('json', updateListSchema), async (c) => {
@@ -162,6 +164,7 @@ shoppingRouter.patch('/lists/:id', zValidator('json', updateListSchema), async (
 		.set({
 			...(data.name && { name: data.name }),
 			...(data.notes !== undefined && { notes: data.notes }),
+			...(data.pinned !== undefined && { pinned: data.pinned }),
 		})
 		.where(eq(shoppingLists.id, listId))
 		.returning();
