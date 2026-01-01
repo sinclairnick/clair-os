@@ -15,7 +15,7 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "@/components/ui/tabs";
-import { Plus, CheckCircle, Trash2, MoreVertical, Pencil, FileText, LayoutGrid, List as ListIcon, Pin, PinOff, Filter, FilterX, ChevronRight, ChevronDown, Eye, EyeOff, ChevronUp } from "lucide-react";
+import { Plus, CheckCircle, Trash2, MoreVertical, Pencil, FileText, LayoutGrid, List as ListIcon, Pin, PinOff, ChevronRight, ChevronDown, Eye, EyeOff, ChevronUp } from "lucide-react";
 import {
 	queryKeys,
 	toggleShoppingItemMutation,
@@ -266,10 +266,11 @@ export function ShoppingListCard({ list, defaultViewMode = "inline" }: ShoppingL
 							</Button>
 
 							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
+								<DropdownMenuTrigger render={
 									<Button variant="ghost" size="icon" className="h-8 w-8">
 										<MoreVertical className="w-4 h-4" />
 									</Button>
+								}>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align="end">
 									<DropdownMenuItem onClick={() => updateListMutation.mutate({ id: list.id, pinned: !list.pinned })}>
