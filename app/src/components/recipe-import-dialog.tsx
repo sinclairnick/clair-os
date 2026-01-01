@@ -196,7 +196,7 @@ function parseRecipeText(text: string): ParsedRecipe {
 }
 
 interface RecipeImportDialogProps {
-	trigger?: React.ReactNode;
+	trigger?: React.ReactElement;
 }
 
 export function RecipeImportDialog({ trigger }: RecipeImportDialogProps) {
@@ -316,13 +316,14 @@ export function RecipeImportDialog({ trigger }: RecipeImportDialogProps) {
 				if (!isOpen) resetState();
 			}}
 		>
-			<DialogTrigger>
-				{trigger || (
+			<DialogTrigger render={
+				trigger || (
 					<Button variant="outline">
 						<Upload className="w-4 h-4 mr-2" />
 						Import Recipe
 					</Button>
-				)}
+				)
+			}>
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
 				<DialogHeader>

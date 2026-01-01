@@ -6,6 +6,7 @@ import { useAuth } from "@/components/auth-provider";
 import { Sun, Moon, Monitor, Users, ChevronRight, Bell, BellOff, Loader2 } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
 import { PageTitle } from "@/components/page-title";
+import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 import { useState, useEffect } from "react";
 import { pushManager } from "@/lib/push-manager";
 import { toast } from "sonner";
@@ -54,12 +55,9 @@ export function SettingsPage() {
 	return (
 		<div className="space-y-6">
 			<PageTitle title="Settings" />
-			<div>
-				<h1 className="text-2xl font-bold text-foreground">Settings</h1>
-				<p className="text-muted-foreground">
-					Manage your preferences
-				</p>
-			</div>
+			<PageHeader>
+				<PageHeaderHeading title="Settings" description="Manage your preferences" />
+			</PageHeader>
 
 			<Card>
 				<CardHeader>

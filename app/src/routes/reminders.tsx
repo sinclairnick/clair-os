@@ -19,6 +19,7 @@ import { useCurrentFamilyId } from "@/components/auth-provider";
 import { api, type ReminderResponse, type ReminderCreateInput } from "@/lib/api";
 import { format, isPast, isToday } from "date-fns";
 import { PageTitle } from "@/components/page-title";
+import { PageHeader, PageHeaderHeading, PageHeaderActions } from "@/components/page-header";
 import { ROUTES } from "@/lib/routes";
 import { Link } from "react-router";
 import { pushManager } from "@/lib/push-manager";
@@ -122,63 +123,61 @@ export function RemindersPage() {
 	return (
 		<div className="space-y-6">
 			<PageTitle title="Reminders" />
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold text-foreground">Reminders</h1>
-					<p className="text-muted-foreground">
-						Stay on top of important dates and events
-					</p>
-				</div>
-				<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-					<DialogTrigger>
-						<Button>
-							<Plus className="w-4 h-4 mr-2" />
-							New Reminder
-						</Button>
-					</DialogTrigger>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle>Create Reminder</DialogTitle>
-							<DialogDescription>
-								Add a new reminder for yourself or your family.
-							</DialogDescription>
-						</DialogHeader>
-						<div className="space-y-4">
-							<Input
-								placeholder="Reminder title"
-								value={newTitle}
-								onChange={(e) => setNewTitle(e.target.value)}
-							/>
-							<Textarea
-								placeholder="Description (optional)"
-								value={newDescription}
-								onChange={(e) => setNewDescription(e.target.value)}
-								rows={2}
-							/>
-							<div className="space-y-2">
-								<label className="text-sm font-medium">Remind At</label>
+			<PageHeader>
+				<PageHeaderHeading title="Reminders" description="Stay on top of important dates and events" />
+				<PageHeaderActions>
+					<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+						<DialogTrigger render={
+							<Button>
+								<Plus className="w-4 h-4 mr-2" />
+								New Reminder
+							</Button>
+						}>
+						</DialogTrigger>
+						<DialogContent>
+							<DialogHeader>
+								<DialogTitle>Create Reminder</DialogTitle>
+								<DialogDescription>
+									Add a new reminder for yourself or your family.
+								</DialogDescription>
+							</DialogHeader>
+							<div className="space-y-4">
 								<Input
-									type="datetime-local"
-									value={newRemindAt}
-									onChange={(e) => setNewRemindAt(e.target.value)}
+									placeholder="Reminder title"
+									value={newTitle}
+									onChange={(e) => setNewTitle(e.target.value)}
 								/>
+								<Textarea
+									placeholder="Description (optional)"
+									value={newDescription}
+									onChange={(e) => setNewDescription(e.target.value)}
+									rows={2}
+								/>
+								<div className="space-y-2">
+									<label className="text-sm font-medium">Remind At</label>
+									<Input
+										type="datetime-local"
+										value={newRemindAt}
+										onChange={(e) => setNewRemindAt(e.target.value)}
+									/>
+								</div>
 							</div>
-						</div>
-						<DialogFooter>
-							<Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-								Cancel
-							</Button>
-							<Button
-								onClick={handleCreate}
-								disabled={createMutation.isPending || !newTitle.trim() || !newRemindAt}
-							>
-								{createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-								Create
-							</Button>
-						</DialogFooter>
-					</DialogContent>
-				</Dialog>
-			</div>
+							<DialogFooter>
+								<Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+									Cancel
+								</Button>
+								<Button
+									onClick={handleCreate}
+									disabled={createMutation.isPending || !newTitle.trim() || !newRemindAt}
+								>
+									{createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+									Create
+								</Button>
+							</DialogFooter>
+						</DialogContent>
+					</Dialog>
+				</PageHeaderActions>
+			</PageHeader>
 
 			{isLoading && (
 				<div className="flex items-center justify-center h-64">

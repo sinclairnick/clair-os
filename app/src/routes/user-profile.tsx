@@ -23,6 +23,7 @@ import { api } from "@/lib/api";
 import { ROUTES } from "@/lib/routes";
 import { formatDistanceToNow } from "date-fns";
 import { PageTitle } from "@/components/page-title";
+import { PageHeader } from "@/components/page-header";
 
 export function UserProfilePage() {
 	const { userId } = useParams<{ userId: string }>();
@@ -82,63 +83,64 @@ export function UserProfilePage() {
 	return (
 		<div className="space-y-6">
 			<PageTitle title={`${member.displayName}'s Profile`} />
-			{/* Back Button + Header */}
-			<div className="flex items-start gap-4">
-				<Link to={ROUTES.FAMILY_SETTINGS}>
-					<Button variant="ghost" size="icon" className="shrink-0 mt-1">
-						<ArrowLeft className="w-5 h-5" />
-					</Button>
-				</Link>
-				<div className="flex-1 min-w-0">
-					<div className="flex items-center gap-4">
-						{member.image ? (
-							<img
-								src={member.image}
-								alt={member.name}
-								loading="lazy"
-								className="w-16 h-16 rounded-full ring-4 ring-background"
-							/>
-						) : (
-							<div
-								className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white ring-4 ring-background"
-								style={{ backgroundColor: member.color }}
-							>
-								{member.name.charAt(0).toUpperCase()}
-							</div>
-						)}
-						<div className="flex-1 min-w-0">
-							<h1 className="text-2xl font-bold text-foreground truncate">
-								{member.displayName}
-							</h1>
-							<p className="text-muted-foreground truncate">{member.email}</p>
-							<div className="flex items-center gap-2 mt-1">
-								{isAdmin ? (
-									<Select
-										value={member.role}
-										onValueChange={(role) => updateMemberMutation.mutate({ role: role as string })}
-									>
-										<SelectTrigger className="w-28 h-7 text-xs">
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="admin">Admin</SelectItem>
-											<SelectItem value="member">Member</SelectItem>
-											<SelectItem value="child">Child</SelectItem>
-										</SelectContent>
-									</Select>
-								) : (
-									<Badge variant="secondary" className="capitalize">
-										{member.role}
-									</Badge>
-								)}
-								<span className="text-xs text-muted-foreground">
-									Joined {formatDistanceToNow(new Date(member.joinedAt), { addSuffix: true })}
-								</span>
+			<PageHeader>
+				<div className="flex items-start gap-4">
+					<Link to={ROUTES.FAMILY_SETTINGS}>
+						<Button variant="ghost" size="icon" className="shrink-0 mt-1">
+							<ArrowLeft className="w-5 h-5" />
+						</Button>
+					</Link>
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center gap-4">
+							{member.image ? (
+								<img
+									src={member.image}
+									alt={member.name}
+									loading="lazy"
+									className="w-16 h-16 rounded-full ring-4 ring-background"
+								/>
+							) : (
+								<div
+									className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white ring-4 ring-background"
+									style={{ backgroundColor: member.color }}
+								>
+									{member.name.charAt(0).toUpperCase()}
+								</div>
+							)}
+							<div className="flex-1 min-w-0">
+								<h1 className="text-2xl font-bold text-foreground truncate">
+									{member.displayName}
+								</h1>
+								<p className="text-muted-foreground truncate">{member.email}</p>
+								<div className="flex items-center gap-2 mt-1">
+									{isAdmin ? (
+										<Select
+											value={member.role}
+											onValueChange={(role) => updateMemberMutation.mutate({ role: role as string })}
+										>
+											<SelectTrigger className="w-28 h-7 text-xs">
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="admin">Admin</SelectItem>
+												<SelectItem value="member">Member</SelectItem>
+												<SelectItem value="child">Child</SelectItem>
+											</SelectContent>
+										</Select>
+									) : (
+										<Badge variant="secondary" className="capitalize">
+											{member.role}
+										</Badge>
+									)}
+									<span className="text-xs text-muted-foreground">
+										Joined {formatDistanceToNow(new Date(member.joinedAt), { addSuffix: true })}
+									</span>
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
-			</div>
+			</PageHeader>
 
 			{/* Activity Sections */}
 			<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

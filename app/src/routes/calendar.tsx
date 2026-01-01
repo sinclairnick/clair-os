@@ -1,16 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageTitle } from "@/components/page-title";
+import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 
 export function CalendarPage() {
 	return (
 		<div className="space-y-6">
 			<PageTitle title="Calendar" />
-			<div>
-				<h1 className="text-2xl font-bold text-foreground">Calendar</h1>
-				<p className="text-muted-foreground">
-					Your family's unified schedule
-				</p>
-			</div>
+			<PageHeader>
+				<PageHeaderHeading title="Calendar" description="Your family's unified schedule" />
+			</PageHeader>
 
 			<Card>
 				<CardHeader>

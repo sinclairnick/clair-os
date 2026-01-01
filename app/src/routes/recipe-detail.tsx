@@ -29,6 +29,7 @@ export function RecipeDetailPage() {
 	const queryClient = useQueryClient();
 
 	const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
+	const [checkedInstructions, setCheckedInstructions] = useState<Set<string>>(new Set());
 	const [highlightedIngredientName, setHighlightedIngredientName] = useState<string | null>(null);
 	const [addToListDialogOpen, setAddToListDialogOpen] = useState(false);
 	const [scaleFactor, setScaleFactor] = useState(1);
@@ -41,10 +42,12 @@ export function RecipeDetailPage() {
 	// Watched recipes store
 	const {
 		addRecipe: addToWatched,
+		updateRecipe: updateWatched,
 		removeRecipe: removeFromWatched,
 		isWatched,
 		getRecipe: getWatchedRecipe,
 		toggleIngredient: watchedToggleIngredient,
+		toggleInstruction: watchedToggleInstruction,
 		setScaleFactor: watchedSetScaleFactor,
 	} = useWatchedRecipesStore();
 
@@ -64,10 +67,16 @@ export function RecipeDetailPage() {
 			const watched = getWatchedRecipe(recipeId);
 			if (watched) {
 				setCheckedIngredients(new Set(watched.checkedIngredients));
+				setCheckedInstructions(new Set(watched.checkedInstructions));
 				setScaleFactor(watched.scaleFactor);
+
+				// Auto-sync image if missing from store but available in current data
+				if (!watched.imageUrl && recipe?.imageUrl) {
+					updateWatched(recipeId, { imageUrl: recipe.imageUrl });
+				}
 			}
 		}
-	}, [recipe, recipeId, getWatchedRecipe]);
+	}, [recipe, recipeId, getWatchedRecipe, updateWatched]);
 
 	const { data: activeShoppingLists = [] } = useQuery(
 		shoppingListsQuery(familyId || "", {
@@ -143,7 +152,23 @@ export function RecipeDetailPage() {
 		});
 		// Track in watched recipes store
 		if (recipeId && recipe) {
-			watchedToggleIngredient(recipeId, recipe.title, index);
+			watchedToggleIngredient(recipeId, recipe.title, recipe.imageUrl, index);
+		}
+	};
+
+	const toggleInstruction = (id: string, totalCount: number) => {
+		setCheckedInstructions(prev => {
+			const next = new Set(prev);
+			if (next.has(id)) {
+				next.delete(id);
+			} else {
+				next.add(id);
+			}
+			return next;
+		});
+		// Track in watched recipes store
+		if (recipeId && recipe) {
+			watchedToggleInstruction(recipeId, recipe.title, recipe.imageUrl, id, totalCount);
 		}
 	};
 
@@ -151,7 +176,7 @@ export function RecipeDetailPage() {
 	const handleScaleChange = (newScale: number) => {
 		setScaleFactor(newScale);
 		if (recipeId && recipe) {
-			watchedSetScaleFactor(recipeId, recipe.title, newScale);
+			watchedSetScaleFactor(recipeId, recipe.title, recipe.imageUrl, newScale);
 		}
 	};
 
@@ -162,7 +187,7 @@ export function RecipeDetailPage() {
 			removeFromWatched(recipeId);
 			toast.info("Recipe unpinned from sidebar");
 		} else {
-			addToWatched({ id: recipeId, title: recipe.title, explicit: true });
+			addToWatched({ id: recipeId, title: recipe.title, imageUrl: recipe.imageUrl, explicit: true });
 			toast.success("Recipe pinned to sidebar");
 		}
 	};
@@ -196,9 +221,7 @@ export function RecipeDetailPage() {
 
 	const clearAllChecks = useCallback(() => {
 		setCheckedIngredients(new Set());
-		// Also clear the instruction heading checks from the DOM
-		const checkedBlocks = document.querySelectorAll('.recipe-viewer-checkable .is-checked');
-		checkedBlocks.forEach(block => block.classList.remove('is-checked'));
+		setCheckedInstructions(new Set());
 		toast.info("All checks cleared");
 	}, []);
 
@@ -238,15 +261,15 @@ export function RecipeDetailPage() {
 				<div className="flex items-center gap-2">
 					<Button
 						variant={isWatched(recipeId!) ? "secondary" : "outline"}
-						size="sm"
 						onClick={handleToggleWatched}
 						title={isWatched(recipeId!) ? "Remove from sidebar" : "Pin to sidebar"}
 					>
 						<Pin className={cn("w-4 h-4", isWatched(recipeId!) && "fill-current")} />
+						{isWatched(recipeId!) ? "Unpin" : "Pin"}
 					</Button>
 					<Button variant="outline" onClick={() => navigate(`/recipes/${recipeId}/edit`)}>
 						<Edit className="w-4 h-4 md:mr-2" />
-						<span className="hidden md:inline">Edit</span>
+						Edit
 					</Button>
 				</div>
 			</div>
@@ -306,6 +329,8 @@ export function RecipeDetailPage() {
 								key={recipe.id} // Needed to rerender the rich text properly when recipe id changes
 								content={recipe.instructions}
 								recipeId={recipe.id}
+								checkedInstructions={Array.from(checkedInstructions)}
+								onToggleInstruction={toggleInstruction}
 								className="[&_.timer-mention]:cursor-pointer [&_.timer-mention:hover]:scale-105 [&_.timer-mention]:transition-transform"
 								onIngredientHover={(name) => setHighlightedIngredientName(name)}
 							/>

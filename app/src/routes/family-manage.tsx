@@ -24,6 +24,7 @@ import { useCurrentFamilyId, useAuth } from "@/components/auth-provider";
 import { api, type InviteResponse } from "@/lib/api";
 import { ROUTES } from "@/lib/routes";
 import { PageTitle } from "@/components/page-title";
+import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 
 export function FamilyManagePage() {
 	const familyId = useCurrentFamilyId();
@@ -97,14 +98,12 @@ export function FamilyManagePage() {
 	return (
 		<div className="space-y-6">
 			<PageTitle title="Family Management" />
-			<div>
-				<h1 className="text-2xl font-bold text-foreground">
-					{currentFamily?.name} Settings
-				</h1>
-				<p className="text-muted-foreground">
-					Manage family members and invite links
-				</p>
-			</div>
+			<PageHeader>
+				<PageHeaderHeading
+					title={`${currentFamily?.name} Settings`}
+					description="Manage family members and invite links"
+				/>
+			</PageHeader>
 
 			{/* Members Section */}
 			<Card>

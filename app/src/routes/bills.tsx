@@ -26,6 +26,7 @@ import { useCurrentFamilyId } from "@/components/auth-provider";
 import { api, type BillResponse, type BillCreateInput } from "@/lib/api";
 import { format, isPast, isToday, addDays } from "date-fns";
 import { PageTitle } from "@/components/page-title";
+import { PageHeader, PageHeaderHeading, PageHeaderActions } from "@/components/page-header";
 
 type BillFrequency = 'once' | 'weekly' | 'fortnightly' | 'monthly' | 'quarterly' | 'yearly';
 
@@ -111,89 +112,87 @@ export function BillsPage() {
 	return (
 		<div className="space-y-6">
 			<PageTitle title="Bills" />
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold text-foreground">Bills & Expenses</h1>
-					<p className="text-muted-foreground">
-						Track and manage household bills
-					</p>
-				</div>
-				<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-					<DialogTrigger>
-						<Button>
-							<Plus className="w-4 h-4 mr-2" />
-							Add Bill
-						</Button>
-					</DialogTrigger>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle>Add Bill</DialogTitle>
-							<DialogDescription>
-								Track a new bill or expense. A reminder will be created automatically.
-							</DialogDescription>
-						</DialogHeader>
-						<div className="space-y-4">
-							<Input
-								placeholder="Bill name (e.g., Rent, Power)"
-								value={newName}
-								onChange={(e) => setNewName(e.target.value)}
-							/>
-							<Textarea
-								placeholder="Description (optional)"
-								value={newDescription}
-								onChange={(e) => setNewDescription(e.target.value)}
-								rows={2}
-							/>
-							<div className="grid grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<label className="text-sm font-medium">Amount (NZD)</label>
-									<Input
-										type="number"
-										step="0.01"
-										min="0"
-										placeholder="0.00"
-										value={newAmount}
-										onChange={(e) => setNewAmount(e.target.value)}
-									/>
-								</div>
-								<div className="space-y-2">
-									<label className="text-sm font-medium">Due Date</label>
-									<Input
-										type="date"
-										value={newDueDate}
-										onChange={(e) => setNewDueDate(e.target.value)}
-									/>
-								</div>
-							</div>
-							<div className="space-y-2">
-								<label className="text-sm font-medium">Frequency</label>
-								<Select value={newFrequency} onValueChange={(v) => setNewFrequency(v as BillFrequency)}>
-									<SelectTrigger>
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										{Object.entries(frequencyLabels).map(([value, label]) => (
-											<SelectItem key={value} value={value}>{label}</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-						</div>
-						<DialogFooter>
-							<Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-								Cancel
-							</Button>
-							<Button
-								onClick={handleCreate}
-								disabled={createMutation.isPending || !newName.trim() || !newAmount || !newDueDate}
-							>
-								{createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+			<PageHeader>
+				<PageHeaderHeading title="Bills & Expenses" description="Track and manage household bills" />
+				<PageHeaderActions>
+					<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+						<DialogTrigger render={
+							<Button>
+								<Plus className="w-4 h-4 mr-2" />
 								Add Bill
 							</Button>
-						</DialogFooter>
-					</DialogContent>
-				</Dialog>
-			</div>
+						}>
+						</DialogTrigger>
+						<DialogContent>
+							<DialogHeader>
+								<DialogTitle>Add Bill</DialogTitle>
+								<DialogDescription>
+									Track a new bill or expense. A reminder will be created automatically.
+								</DialogDescription>
+							</DialogHeader>
+							<div className="space-y-4">
+								<Input
+									placeholder="Bill name (e.g., Rent, Power)"
+									value={newName}
+									onChange={(e) => setNewName(e.target.value)}
+								/>
+								<Textarea
+									placeholder="Description (optional)"
+									value={newDescription}
+									onChange={(e) => setNewDescription(e.target.value)}
+									rows={2}
+								/>
+								<div className="grid grid-cols-2 gap-4">
+									<div className="space-y-2">
+										<label className="text-sm font-medium">Amount (NZD)</label>
+										<Input
+											type="number"
+											step="0.01"
+											min="0"
+											placeholder="0.00"
+											value={newAmount}
+											onChange={(e) => setNewAmount(e.target.value)}
+										/>
+									</div>
+									<div className="space-y-2">
+										<label className="text-sm font-medium">Due Date</label>
+										<Input
+											type="date"
+											value={newDueDate}
+											onChange={(e) => setNewDueDate(e.target.value)}
+										/>
+									</div>
+								</div>
+								<div className="space-y-2">
+									<label className="text-sm font-medium">Frequency</label>
+									<Select value={newFrequency} onValueChange={(v) => setNewFrequency(v as BillFrequency)}>
+										<SelectTrigger>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											{Object.entries(frequencyLabels).map(([value, label]) => (
+												<SelectItem key={value} value={value}>{label}</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+							<DialogFooter>
+								<Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+									Cancel
+								</Button>
+								<Button
+									onClick={handleCreate}
+									disabled={createMutation.isPending || !newName.trim() || !newAmount || !newDueDate}
+								>
+									{createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+									Add Bill
+								</Button>
+							</DialogFooter>
+						</DialogContent>
+					</Dialog>
+				</PageHeaderActions>
+			</PageHeader>
 
 			{isLoading && (
 				<div className="flex items-center justify-center h-64">

@@ -34,6 +34,7 @@ import { api } from "@/lib/api";
 import { RecipeHoverPreview } from "@/components/recipe-hover-preview";
 import { toast } from "sonner";
 import { PageTitle } from "@/components/page-title";
+import { PageHeader, PageHeaderHeading, PageHeaderActions } from "@/components/page-header";
 
 export function ShoppingPage() {
 	const familyId = useCurrentFamilyId();
@@ -201,55 +202,53 @@ export function ShoppingPage() {
 	return (
 		<div className="space-y-6">
 			<PageTitle title="Shopping" />
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold text-foreground">Shopping Lists</h1>
-					<p className="text-muted-foreground">
-						Manage your grocery and shopping lists
-					</p>
-				</div>
-				<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-					<DialogTrigger>
-						<Button>
-							<Plus className="w-4 h-4 mr-2" />
-							New List
-						</Button>
-					</DialogTrigger>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle>Create Shopping List</DialogTitle>
-							<DialogDescription>
-								Give your new shopping list a name.
-							</DialogDescription>
-						</DialogHeader>
-						<Input
-							placeholder="e.g., Weekly Groceries"
-							value={newListName}
-							onChange={(e) => setNewListName(e.target.value)}
-							onKeyDown={(e) => e.key === "Enter" && handleCreateList()}
-						/>
-						<DialogFooter>
-							<Button
-								variant="outline"
-								onClick={() => setIsCreateDialogOpen(false)}
-							>
-								Cancel
+			<PageHeader>
+				<PageHeaderHeading title="Shopping Lists" description="Manage your grocery and shopping lists" />
+				<PageHeaderActions>
+					<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+						<DialogTrigger render={
+							<Button>
+								<Plus className="w-4 h-4 mr-2" />
+								New List
 							</Button>
-							<Button
-								onClick={handleCreateList}
-								disabled={
-									createListMutation.isPending || !newListName.trim()
-								}
-							>
-								{createListMutation.isPending && (
-									<Loader2 className="w-4 h-4 mr-2 animate-spin" />
-								)}
-								Create
-							</Button>
-						</DialogFooter>
-					</DialogContent>
-				</Dialog>
-			</div>
+						}>
+						</DialogTrigger>
+						<DialogContent>
+							<DialogHeader>
+								<DialogTitle>Create Shopping List</DialogTitle>
+								<DialogDescription>
+									Give your new shopping list a name.
+								</DialogDescription>
+							</DialogHeader>
+							<Input
+								placeholder="e.g., Weekly Groceries"
+								value={newListName}
+								onChange={(e) => setNewListName(e.target.value)}
+								onKeyDown={(e) => e.key === "Enter" && handleCreateList()}
+							/>
+							<DialogFooter>
+								<Button
+									variant="outline"
+									onClick={() => setIsCreateDialogOpen(false)}
+								>
+									Cancel
+								</Button>
+								<Button
+									onClick={handleCreateList}
+									disabled={
+										createListMutation.isPending || !newListName.trim()
+									}
+								>
+									{createListMutation.isPending && (
+										<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+									)}
+									Create
+								</Button>
+							</DialogFooter>
+						</DialogContent>
+					</Dialog>
+				</PageHeaderActions>
+			</PageHeader>
 
 			{isLoading && (
 				<div className="flex items-center justify-center h-64">

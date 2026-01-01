@@ -29,6 +29,7 @@ import { format, isPast, isToday } from "date-fns";
 import { TaskBoard } from "@/components/task-board";
 import { useAppStore } from "@/lib/store";
 import { PageTitle } from "@/components/page-title";
+import { PageHeader, PageHeaderHeading, PageHeaderActions } from "@/components/page-header";
 
 const priorityColors = {
 	low: "bg-secondary text-secondary-foreground",
@@ -139,20 +140,15 @@ export function TasksPage() {
 	return (
 		<div className="space-y-6">
 			<PageTitle title="Tasks" />
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold text-foreground">Tasks & Chores</h1>
-					<p className="text-muted-foreground">
-						Track household tasks and chores
-					</p>
-				</div>
-				<div className="flex items-center gap-2">
+			<PageHeader>
+				<PageHeaderHeading title="Tasks & Chores" description="Track household tasks and chores" />
+				<PageHeaderActions>
 					<div className="flex bg-muted rounded-md p-1">
 						<Button
 							variant={viewMode === "list" ? "secondary" : "ghost"}
 							size="sm"
 							onClick={() => setViewMode("list")}
-							className="h-8 w-8 p-0"
+							className="h-8 flex-1 md:w-8 md:p-0"
 						>
 							<LayoutList className="w-4 h-4" />
 						</Button>
@@ -160,18 +156,19 @@ export function TasksPage() {
 							variant={viewMode === "kanban" ? "secondary" : "ghost"}
 							size="sm"
 							onClick={() => setViewMode("kanban")}
-							className="h-8 w-8 p-0"
+							className="h-8 flex-1 md:w-8 md:p-0"
 						>
 							<Kanban className="w-4 h-4" />
 						</Button>
 					</div>
 
 					<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-						<DialogTrigger>
+						<DialogTrigger render={
 							<Button>
 								<Plus className="w-4 h-4 mr-2" />
 								Add Task
 							</Button>
+						}>
 						</DialogTrigger>
 						<DialogContent>
 							<DialogHeader>
@@ -246,8 +243,8 @@ export function TasksPage() {
 							</DialogFooter>
 						</DialogContent>
 					</Dialog>
-				</div>
-			</div>
+				</PageHeaderActions>
+			</PageHeader>
 
 			{isLoading && (
 				<div className="flex items-center justify-center h-64">
