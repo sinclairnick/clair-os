@@ -1,6 +1,6 @@
 {
   "name": "clairos",
-  "version": "0.1.0",
+  "version": "0.0.31",
   "private": true,
   "scripts": {
     "dev": "pnpm --filter '*' dev",
@@ -17,7 +17,8 @@
     "db:generate": "pnpm --filter api db:generate",
     "db:migrate": "pnpm --filter api db:migrate",
     "db:studio": "pnpm --filter api db:studio",
-    "import:recipes": "node --loader tsx scripts/import-legacy-recipes.ts"
+    "import:recipes": "node --loader tsx scripts/import-legacy-recipes.ts",
+    "postversion": "git push --follow-tags"
   },
   "devDependencies": {
     "tsx": "^4.21.0",
