@@ -40,7 +40,7 @@ export function TaskBoard({ tasks, onStatusChange }: { tasks: TaskResponse[]; on
 	}, [onStatusChange]);
 
 	return (
-		<div className="flex h-full gap-4 overflow-x-auto pb-4">
+		<div className="flex gap-4 pb-4 overflow-x-auto max-w-6xl mx-auto w-full snap-x snap-mandatory">
 			{COLUMNS.map((col) => (
 				<Column
 					key={col.id}
@@ -74,7 +74,7 @@ function Column({ columnId, title, tasks }: { columnId: TaskStatus; title: strin
 		<div
 			ref={ref}
 			className={cn(
-				"flex h-full w-80 min-w-80 flex-col rounded-lg border bg-muted/50 p-4 transition-colors",
+				"flex h-full w-[calc(100vw-2rem)] shrink-0 snap-center md:w-auto md:flex-1 md:min-w-[250px] md:max-w-md flex-col rounded-lg border bg-muted/50 p-4 transition-colors",
 				isDraggedOver ? "bg-muted" : ""
 			)}
 		>
