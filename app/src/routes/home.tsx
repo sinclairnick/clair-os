@@ -53,9 +53,11 @@ export function HomePage() {
 	const toggleFavoriteMutation = useMutation({
 		mutationFn: ({ id, favorite }: { id: string; favorite: boolean }) =>
 			api.recipes.toggleFavorite(id, favorite),
-		onSuccess: () => {
+		onSuccess: (_, { id }) => {
 			if (familyId) {
 				queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary(familyId) });
+				queryClient.invalidateQueries({ queryKey: queryKeys.recipes.all(familyId) });
+				queryClient.invalidateQueries({ queryKey: queryKeys.recipes.detail(id) });
 			}
 		},
 		onError: () => {
@@ -240,7 +242,7 @@ export function HomePage() {
 				{/* Activity Feed Sidebar */}
 				<div className="lg:col-span-4 space-y-4">
 					<h3 className="text-lg font-bold tracking-tight px-1">Activity</h3>
-					<Card className="rounded-2xl overflow-hidden border-muted/50 bg-muted/10 shadow-sm !py-0">
+					<Card className="rounded-2xl overflow-hidden border-muted/50 bg-muted/10 shadow-sm !py-0 !px-0">
 						<div className="h-[430px] overflow-y-auto scrollbar-none">
 							<div className="divide-y divide-muted/50">
 								{/* Tasks Section */}

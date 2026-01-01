@@ -37,9 +37,8 @@ export function RecipeCard({
 	return (
 		<Card
 			className={cn(
-				"hover:shadow-md transition-shadow cursor-pointer group relative overflow-hidden",
+				"hover:shadow-md transition-shadow cursor-pointer group relative overflow-hidden !pt-0",
 				{
-					"!pt-0": recipe.imageUrl != null,
 					"ring-2 ring-primary border-primary": selectionMode && isSelected
 				},
 				className
@@ -70,26 +69,45 @@ export function RecipeCard({
 					</div>
 				)}
 
-				<div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
-					{recipe.isSignature && (
-						<Badge className="bg-amber-500 text-white border-none shadow-sm px-2 py-0.5 gap-1 font-bold text-[10px] uppercase tracking-wider">
-							<Award className="w-3 h-3" />
-							Signature
-						</Badge>
-					)}
-				</div>
+				{recipe.isSignature && (
+					<>
+						<div className="absolute inset-0 z-10 pointer-events-none rounded-[inherit] overflow-hidden shadow-[inset_0_0_40px_rgba(184,134,11,0.25)]">
+							{/* Subtle Golden Glow */}
+							<div className="absolute inset-0 bg-gradient-to-t from-[#B38728]/10 via-transparent to-[#B38728]/5" />
+
+							{/* Shimmer Animation Layer */}
+							<div className="absolute inset-0 animate-shimmer pointer-events-none" />
+						</div>
+
+						{/* Signature Badge */}
+						<div className="absolute top-3 left-3 z-20">
+							<Badge className="bg-gradient-to-br from-[#BF953F] via-[#FCF6BA] to-[#AA771C] text-amber-950 border-none shadow-[0_2px_12px_rgba(184,134,11,0.4)] px-3 py-1 gap-1.5 font-semibold text-[11px] tracking-tight transition-transform group-hover:scale-105 duration-500">
+								<Award className="w-3.5 h-3.5 fill-amber-950/20" />
+								Signature
+							</Badge>
+						</div>
+					</>
+				)}
 
 				{onFavoriteToggle && (
 					<Button
 						size="icon"
 						variant="ghost"
-						className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+						className={cn(
+							"absolute top-3 right-3 z-20 h-9 w-9 rounded-full bg-background/90 backdrop-blur-md shadow-sm transition-all duration-300 hover:scale-110 active:scale-95",
+							recipe.favorite ? "opacity-100" : "opacity-40 group-hover:opacity-100"
+						)}
 						onClick={(e) => {
 							e.stopPropagation();
 							onFavoriteToggle(recipe.id, !recipe.favorite);
 						}}
 					>
-						<Heart className={cn("w-4 h-4 transition-colors", recipe.favorite ? "fill-red-500 text-red-500" : "text-muted-foreground")} />
+						<Heart
+							className={cn(
+								"w-5 h-5 transition-all duration-300",
+								recipe.favorite ? "fill-red-500 text-red-500 animate-in zoom-in-50" : "text-muted-foreground"
+							)}
+						/>
 					</Button>
 				)}
 			</div>
@@ -135,6 +153,6 @@ export function RecipeCard({
 					</div>
 				)}
 			</CardContent>
-		</Card>
+		</Card >
 	);
 }

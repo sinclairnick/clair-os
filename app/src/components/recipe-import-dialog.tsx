@@ -321,15 +321,8 @@ export function RecipeImportDialog({ trigger, open: controlledOpen, onOpenChange
 				if (!isOpen) resetState();
 			}}
 		>
-			<DialogTrigger render={
-				trigger || (
-					<Button variant="outline">
-						<Upload className="w-4 h-4 mr-2" />
-						Import Recipe
-					</Button>
-				)
-			}>
-			</DialogTrigger>
+			{trigger && <DialogTrigger render={trigger} />}
+
 			<DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">

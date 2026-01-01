@@ -11,7 +11,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Loader2, Users, Edit, ShoppingCart, Clock, RotateCcw, Minus, Plus, Pin, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Loader2, Users, Edit, ShoppingCart, Clock, RotateCcw, Minus, Plus, Pin, ChevronDown, ChevronRight, Heart } from "lucide-react";
 import { useCurrentFamilyId } from "@/components/auth-provider";
 import { RecipeViewer } from "@/components/editor";
 import { api } from "@/lib/api";
@@ -21,6 +21,7 @@ import { useWatchedRecipesStore } from "@/lib/watched-recipes-store";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PageTitle } from "@/components/page-title";
+import { SignatureBadge } from "@/components/signature-badge";
 
 export function RecipeDetailPage() {
 	const { recipeId } = useParams<{ recipeId: string }>();
@@ -180,6 +181,22 @@ export function RecipeDetailPage() {
 		}
 	};
 
+	const toggleFavoriteMutation = useMutation({
+		mutationFn: ({ id, favorite }: { id: string; favorite: boolean }) =>
+			api.recipes.toggleFavorite(id, favorite),
+		onSuccess: (_, { favorite }) => {
+			if (familyId && recipeId) {
+				queryClient.invalidateQueries({ queryKey: queryKeys.recipes.detail(recipeId) });
+				queryClient.invalidateQueries({ queryKey: queryKeys.recipes.all(familyId) });
+				queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary(familyId) });
+			}
+			toast.success(favorite ? "Added to favorites" : "Removed from favorites");
+		},
+		onError: () => {
+			toast.error("Failed to update favorite status");
+		}
+	});
+
 	// Toggle watched/minimized status
 	const handleToggleWatched = () => {
 		if (!recipeId || !recipe) return;
@@ -260,9 +277,21 @@ export function RecipeDetailPage() {
 				</Button>
 				<div className="flex items-center gap-2">
 					<Button
+						variant="outline"
+						size="icon"
+						className={cn(
+							"h-10 w-10 rounded-full transition-all duration-300",
+							recipe.favorite && "bg-red-50 border-red-200 text-red-500 hover:bg-red-100 hover:text-red-600"
+						)}
+						onClick={() => toggleFavoriteMutation.mutate({ id: recipe.id, favorite: !recipe.favorite })}
+					>
+						<Heart className={cn("w-5 h-5", recipe.favorite && "fill-current")} />
+					</Button>
+					<Button
 						variant={isWatched(recipeId!) ? "secondary" : "outline"}
 						onClick={handleToggleWatched}
 						title={isWatched(recipeId!) ? "Remove from sidebar" : "Pin to sidebar"}
+						className="rounded-full h-10"
 					>
 						<Pin className={cn("w-4 h-4", isWatched(recipeId!) && "fill-current")} />
 						{isWatched(recipeId!) ? "Unpin" : "Pin"}
@@ -284,6 +313,11 @@ export function RecipeDetailPage() {
 							loading="lazy"
 							className="w-full h-full object-cover"
 						/>
+					</div>
+				)}
+				{recipe.isSignature && (
+					<div className="mb-4">
+						<SignatureBadge size="lg" />
 					</div>
 				)}
 				<h1 className="text-2xl md:text-3xl font-bold mb-2">{recipe.title}</h1>

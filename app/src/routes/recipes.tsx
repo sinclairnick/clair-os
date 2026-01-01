@@ -134,6 +134,21 @@ export function RecipesPage() {
 		}
 	});
 
+	const toggleFavoriteMutation = useMutation({
+		mutationFn: ({ id, favorite }: { id: string; favorite: boolean }) =>
+			api.recipes.toggleFavorite(id, favorite),
+		onSuccess: (_, { id }) => {
+			if (familyId) {
+				queryClient.invalidateQueries({ queryKey: queryKeys.recipes.all(familyId) });
+				queryClient.invalidateQueries({ queryKey: queryKeys.recipes.detail(id) });
+				queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary(familyId) });
+			}
+		},
+		onError: () => {
+			toast.error("Failed to update favorite status");
+		}
+	});
+
 	const toggleTag = (tag: string) => {
 		setSelectedTags((prev) =>
 			prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
@@ -648,6 +663,7 @@ export function RecipesPage() {
 							recipe={recipe}
 							selectionMode={selectionMode}
 							isSelected={selectedIds.has(recipe.id)}
+							onFavoriteToggle={(id, favorite) => toggleFavoriteMutation.mutate({ id, favorite })}
 							onClick={(recipe) => {
 								if (selectionMode) {
 									toggleSelection(recipe.id);

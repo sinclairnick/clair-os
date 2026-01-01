@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "pwa:icons": "sips -z 192 192 public/icon-large.png --out public/pwa-192x192.png && sips -z 512 512 public/icon.png --out public/pwa-512x512.png && sips -z 180 180 public/icon.png --out public/apple-touch-icon.png",
+    "pwa:icons": "sips -z 192 192 public/icon-large.png --out public/pwa-192x192.png && sips -z 512 512 public/icon-large.png --out public/pwa-512x512.png && sips -z 180 180 public/icon-large.png --out public/apple-touch-icon.png",
     "pwa:favicon": "sips -z 32 32 public/icon-favicon.png --out public/favicon.png",
     "pwa:all": "pnpm run pwa:icons && pnpm run pwa:favicon",
     "test": "vitest run"

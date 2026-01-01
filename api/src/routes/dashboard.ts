@@ -19,14 +19,15 @@ dashboardRouter.get('/', async (c) => {
 
 	// Parallelize queries for efficiency
 	const [
-		recentRecipes,
+		recentRecipesRaw,
 		upcomingReminders,
 		outstandingTasks,
 		activeShoppingLists,
 		pinnedShoppingLists,
 		upcomingBills,
-		signatureRecipes,
-		favoriteRecipes
+		signatureRecipesRaw,
+		favoriteRecipesRaw,
+		favoriteIdsRaw
 	] = await Promise.all([
 		// 1. Recent Recipes
 		db.query.recipes.findMany({
@@ -125,8 +126,20 @@ dashboardRouter.get('/', async (c) => {
 				eq(recipes.familyId, familyId)
 			))
 			.orderBy(desc(userFavoriteRecipes.createdAt))
-			.limit(5)
+			.limit(5),
+
+		// 9. All User Favorite IDs (for marking other sections)
+		db.query.userFavoriteRecipes.findMany({
+			where: eq(userFavoriteRecipes.userId, user.id),
+		})
 	]);
+
+	const favoriteRecipeIds = new Set(favoriteIdsRaw.map(f => f.recipeId));
+
+	const mapRecipe = (recipe: any) => ({
+		...recipe,
+		favorite: favoriteRecipeIds.has(recipe.id)
+	});
 
 	// Re-sort reminders to be truly "next up" (closest future dates first, then overdue)
 	upcomingReminders.sort((a, b) => new Date(a.remindAt).getTime() - new Date(b.remindAt).getTime());
@@ -135,13 +148,13 @@ dashboardRouter.get('/', async (c) => {
 	upcomingBills.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
 	return c.json({
-		recentRecipes: recentRecipes.map(r => ({ ...r, favorite: false })), // Not strictly necessary but consistent
+		recentRecipes: recentRecipesRaw.map(mapRecipe),
 		upcomingReminders,
 		outstandingTasks,
 		activeShoppingLists,
 		pinnedShoppingLists,
 		upcomingBills,
-		signatureRecipes: signatureRecipes.map(r => ({ ...r, favorite: false })),
-		favoriteRecipes: favoriteRecipes.map(r => ({ ...r, favorite: true }))
+		signatureRecipes: signatureRecipesRaw.map(mapRecipe),
+		favoriteRecipes: favoriteRecipesRaw.map(r => ({ ...r, favorite: true }))
 	});
 });

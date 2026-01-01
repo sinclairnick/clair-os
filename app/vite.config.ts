@@ -14,7 +14,7 @@ export default defineConfig({
 			srcDir: "src",
 			filename: "sw.ts",
 			registerType: "autoUpdate",
-			includeAssets: ["favicon.ico", "apple-touch-icon.png"],
+			includeAssets: ["favicon.png", "apple-touch-icon.png"],
 			manifest: {
 				name: "ClairOS - Family Home",
 				short_name: "ClairOS",

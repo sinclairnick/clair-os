@@ -38,6 +38,7 @@ const ingredientGroupSchema = z.object({
 
 // Get all recipes for a family with search, sort, and filters
 recipesRouter.get('/', requireFamilyMember, async (c) => {
+	const user = c.get('user');
 	const familyId = c.get('familyId');
 	const {
 		sort,
@@ -67,9 +68,14 @@ recipesRouter.get('/', requireFamilyMember, async (c) => {
 	const query = db.select({
 		...safeRecipeColumns,
 		ingredientCount: sql<number>`coalesce(${sq.count!}, 0)`.mapWith(Number),
+		favorite: sql<boolean>`CASE WHEN ${userFavoriteRecipes.recipeId} IS NOT NULL THEN true ELSE false END`.as('favorite')
 	})
 		.from(recipes)
 		.leftJoin(sq, eq(recipes.id, sq.recipeId))
+		.leftJoin(userFavoriteRecipes, and(
+			eq(recipes.id, userFavoriteRecipes.recipeId),
+			eq(userFavoriteRecipes.userId, user.id)
+		))
 		.$dynamic();
 
 	// Filters
@@ -228,6 +234,7 @@ recipesRouter.post('/', zValidator('json', createRecipeSchema), async (c) => {
 recipesRouter.get('/:id',
 	requirePermission('can_view', 'recipe', (c) => c.req.param('id')),
 	async (c) => {
+		const user = c.get('user');
 		const recipeId = c.req.param('id');
 
 		const recipe = await db.query.recipes.findFirst({
@@ -240,6 +247,10 @@ recipesRouter.get('/:id',
 					orderBy: (ingredients, { asc }) => [asc(ingredients.sortOrder)],
 				},
 				createdBy: true,
+				favoritedBy: {
+					where: eq(userFavoriteRecipes.userId, user.id),
+					limit: 1,
+				},
 			},
 		});
 
@@ -247,7 +258,11 @@ recipesRouter.get('/:id',
 			return c.json({ error: 'Recipe not found' }, 404);
 		}
 
-		return c.json(recipe);
+		return c.json({
+			...recipe,
+			favorite: recipe.favoritedBy.length > 0,
+			favoritedBy: undefined,
+		});
 	}
 );
 

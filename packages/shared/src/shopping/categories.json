@@ -121,6 +121,14 @@
     "cookie": "Snacks",
     "chocolate": "Snacks",
     "candy": "Snacks",
-    "popcorn": "Snacks"
+    "popcorn": "Snacks",
+
+    "toilet paper": "Household",
+    "paper towel": "Household",
+    "soap": "Household",
+    "detergent": "Household",
+    "cleaner": "Household",
+    "trash bag": "Household",
+    "sponge": "Household"
   }
 }
