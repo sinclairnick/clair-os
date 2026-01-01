@@ -33,11 +33,12 @@ export function ItemRow({
 	onCancel,
 }: ItemRowProps) {
 	return (
-		<div className="flex items-center gap-3 py-1.5 group">
+		<div className="flex items-center gap-3 md:gap-2 py-2.5 md:py-1 group">
 			<Checkbox
 				checked={item.checked}
 				disabled={isPending}
 				onCheckedChange={onToggle}
+				className="size-5 md:size-4"
 			/>
 
 			{isEditing ? (
@@ -51,13 +52,13 @@ export function ItemRow({
 							if (e.key === "Escape") onCancel();
 						}}
 						autoFocus
-						className="h-7 text-sm"
+						className="h-10 md:h-7 text-base md:text-sm"
 					/>
 				</div>
 			) : (
 				<div className="flex-1 flex items-center gap-2 min-w-0">
 					<span
-						className={`flex-1 cursor-pointer hover:bg-muted/50 rounded px-1 -ml-1 py-0.5 ${item.checked ? "line-through text-muted-foreground" : ""
+						className={`flex-1 cursor-pointer hover:bg-muted/50 rounded px-1 -ml-1 py-1 md:py-0.5 text-base md:text-sm ${item.checked ? "line-through text-muted-foreground" : ""
 							}`}
 						onClick={onEdit}
 					>
@@ -66,7 +67,7 @@ export function ItemRow({
 						{item.unit && ` (${item.unit})`}
 					</span>
 					{category && category !== 'Other' && (
-						<Badge variant="secondary" className="shrink-0 px-1.5 py-0 h-4 text-[9px] font-semibold uppercase tracking-wider bg-muted/50 text-muted-foreground/70 border-none">
+						<Badge variant="secondary" className="shrink-0 px-1.5 py-0 h-5 md:h-4 text-[10px] md:text-[9px] font-semibold uppercase tracking-wider bg-muted/50 text-muted-foreground/70 border-none">
 							{category}
 						</Badge>
 					)}
@@ -83,10 +84,10 @@ export function ItemRow({
 			<Button
 				size="icon"
 				variant="ghost"
-				className="opacity-0 group-hover:opacity-100 h-6 w-6"
+				className="opacity-100 md:opacity-0 group-hover:opacity-100 h-10 w-10 md:h-6 md:w-6"
 				onClick={onDelete}
 			>
-				<Trash2 className="w-3 h-3 text-muted-foreground" />
+				<Trash2 className="w-5 h-5 md:w-3 h-3 text-muted-foreground" />
 			</Button>
 		</div>
 	);
