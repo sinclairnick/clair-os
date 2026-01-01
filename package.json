@@ -1,6 +1,6 @@
 {
   "name": "clairos",
-  "version": "0.0.33",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "pnpm --filter '*' dev",
