@@ -142,15 +142,15 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 				return api.recipes.update(recipeId!, payload);
 			}
 		},
-		onSuccess: () => {
+		onSuccess: (data) => {
 			if (familyId) {
 				queryClient.invalidateQueries({ queryKey: queryKeys.recipes.all(familyId) });
 			}
-			if (recipeId) {
-				queryClient.invalidateQueries({ queryKey: queryKeys.recipes.detail(recipeId) });
+			if (recipeId || data?.id) {
+				queryClient.invalidateQueries({ queryKey: queryKeys.recipes.detail(recipeId || data.id) });
 			}
 			toast.success(isNew ? "Recipe created successfully" : "Recipe updated successfully");
-			navigate("/recipes");
+			navigate(`/recipes/${recipeId || data.id}`);
 		},
 		onError: (error: Error) => {
 			toast.error(`Failed to save recipe: ${error.message}`);
