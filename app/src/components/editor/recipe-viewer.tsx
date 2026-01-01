@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { BlockNoteSchema, defaultInlineContentSpecs } from '@blocknote/core';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/shadcn';
@@ -42,6 +42,7 @@ export function RecipeViewer({
 	onToggleInstruction,
 	onIngredientHover
 }: RecipeViewerProps) {
+	const isLocalUpdateRef = useRef(false);
 	// Parse the content and count instructions
 	const { initialContent, totalInstructions } = useMemo(() => {
 		if (!content) return { initialContent: undefined, totalInstructions: 0 };
@@ -50,12 +51,13 @@ export function RecipeViewer({
 		try {
 			const parsed = JSON.parse(content);
 			if (Array.isArray(parsed)) {
-				// Patch timers with deterministic IDs for persistence
+				// Patch timers and headings with deterministic IDs for persistence
 				let timerIndex = 0;
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				const traverse = (node: any) => {
-					// Count headings as instructions
+					// Count headings as instructions and patch with stable IDs
 					if (node.type === 'heading') {
+						node.id = `instr-${totalCount}`;
 						totalCount++;
 					}
 
@@ -93,20 +95,29 @@ export function RecipeViewer({
 	useEffect(() => {
 		if (!checkedInstructions) return;
 
+		// Skip if this change was triggered by our own click handler
+		// We use basic array comparison as a heuristic
+		if (isLocalUpdateRef.current) {
+			isLocalUpdateRef.current = false;
+			return;
+		}
+
 		// We use a small timeout to ensure the editor has finished rendering
 		const syncCheckedState = () => {
 			// Clear all existing checked classes first
 			const checkedElements = document.querySelectorAll('.recipe-viewer-checkable .is-checked');
 			checkedElements.forEach(el => el.classList.remove('is-checked'));
 
-			// Apply is-checked to matching blocks
+			// Apply is-checked ONLY to the actual block element
 			checkedInstructions.forEach(id => {
-				const elements = document.querySelectorAll(`.recipe-viewer-checkable [data-id="${id}"]`);
-				elements.forEach(element => {
-					element.classList.add('is-checked');
-					const blocks = element.querySelectorAll('.bn-block');
-					blocks.forEach(b => b.classList.add('is-checked'));
-				});
+				const block = document.querySelector(`.recipe-viewer-checkable .bn-block[data-id="${id}"]`);
+				if (block) {
+					block.classList.add('is-checked');
+				} else {
+					// Fallback to any element with the id if .bn-block isn't used
+					const elements = document.querySelectorAll(`.recipe-viewer-checkable [data-id="${id}"]`);
+					elements.forEach(el => el.classList.add('is-checked'));
+				}
 			});
 		};
 
@@ -118,7 +129,7 @@ export function RecipeViewer({
 			clearTimeout(timer);
 			clearTimeout(backupTimer);
 		};
-	}, [recipeId]); // Only full sync when recipe changes
+	}, [recipeId, checkedInstructions]); // Sync on external state changes
 
 	// Handle hover for ingredients highlighting
 	const handleMouseOver = (e: React.MouseEvent) => {
@@ -176,16 +187,23 @@ export function RecipeViewer({
 			if (blockElement && onToggleInstruction) {
 				const blockId = blockElement.dataset.id;
 				if (blockId) {
+					// Mark as local update to prevent the useEffect from doing a full re-sync
+					isLocalUpdateRef.current = true;
+
 					// 1. Immediate UI update (Uncontrolled)
+					// Find ALL elements that might have this ID and toggle them to avoid ghosting
+					const relatedElements = document.querySelectorAll(`.recipe-viewer-checkable [data-id="${blockId}"]`);
 					const isChecking = !blockElement.classList.contains('is-checked');
 
-					if (isChecking) {
-						blockElement.classList.add('is-checked');
-						blockElement.querySelectorAll('.bn-block').forEach(b => b.classList.add('is-checked'));
-					} else {
-						blockElement.classList.remove('is-checked');
-						blockElement.querySelectorAll('.bn-block').forEach(b => b.classList.remove('is-checked'));
-					}
+					relatedElements.forEach(el => {
+						if (isChecking) {
+							el.classList.add('is-checked');
+						} else {
+							el.classList.remove('is-checked');
+							// Also clear any accidental internal ones
+							el.querySelectorAll('.is-checked').forEach(inner => inner.classList.remove('is-checked'));
+						}
+					});
 
 					// 2. Notify parent with the actual state change
 					onToggleInstruction(blockId, totalInstructions);
