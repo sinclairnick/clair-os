@@ -32,6 +32,7 @@ export const recipeFormSchema = z.object({
 	instructions: z.string().default(""),
 	tags: z.array(z.string()).default([]),
 	imageUrl: z.string().optional(),
+	isSignature: z.boolean().default(false),
 	ingredientGroups: z.array(ingredientGroupSchema).default([]),
 	ingredients: z.array(ingredientSchema).default([]),
 });

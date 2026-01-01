@@ -1,7 +1,9 @@
 import { useFormContext, Controller } from "react-hook-form";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Clock, Users } from "lucide-react";
+import { Clock, Users, Star } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 export function RecipeDetailsSidebar() {
 	const { control, register } = useFormContext();
@@ -80,6 +82,26 @@ export function RecipeDetailsSidebar() {
 							)}
 						/>
 					</div>
+				</div>
+
+				<div className="flex items-center justify-between pt-2 border-t">
+					<div className="space-y-0.5">
+						<Label className="text-sm font-medium flex items-center gap-2">
+							<Star className="w-4 h-4 text-primary fill-primary" />
+							Signature Dish
+						</Label>
+						<p className="text-[10px] text-muted-foreground"> Highlight as a family favorite</p>
+					</div>
+					<Controller
+						control={control}
+						name="isSignature"
+						render={({ field }) => (
+							<Checkbox
+								checked={field.value}
+								onCheckedChange={field.onChange}
+							/>
+						)}
+					/>
 				</div>
 			</CardContent>
 		</Card>

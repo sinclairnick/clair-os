@@ -91,12 +91,12 @@ export function ShoppingPage() {
 				<PageHeaderHeading title="Shopping Lists" description="Manage your grocery and shopping lists" />
 				<PageHeaderActions>
 					<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-						<DialogTrigger asChild>
+						<DialogTrigger render={
 							<Button>
 								<Plus className="w-4 h-4 mr-2" />
 								New List
 							</Button>
-						</DialogTrigger>
+						} />
 						<DialogContent>
 							<DialogHeader>
 								<DialogTitle>Create Shopping List</DialogTitle>
@@ -170,7 +170,7 @@ export function ShoppingPage() {
 						<ShoppingBag className="w-5 h-5" />
 						Active Lists
 					</h2>
-					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
 						{activeLists.map((list) => (
 							<ShoppingListCard key={list.id} list={list} />
 						))}
@@ -184,7 +184,7 @@ export function ShoppingPage() {
 						<CheckCircle className="w-5 h-5" />
 						Completed ({completedLists.length})
 					</h2>
-					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
 						{completedLists.map((list) => (
 							<Card key={list.id} className="opacity-60">
 								<CardHeader className="pb-2">

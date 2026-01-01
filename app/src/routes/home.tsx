@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CookingPot, ShoppingCart, CheckSquare, Clock, Play, Pause, RotateCcw, X, Bell, Receipt, ArrowRight } from "lucide-react";
+import { CookingPot, Clock, Play, Pause, RotateCcw, X, Bell, Award, CalendarDays, ChevronRight, Plus, Loader2, CheckCircle, Receipt } from "lucide-react";
 import { Link } from "react-router";
 import { useTimerStore, getLiveRemainingMs } from "@/lib/timer-store";
 import { cn } from "@/lib/utils";
@@ -7,24 +7,70 @@ import { ROUTES } from "@/lib/routes";
 import { useState, useEffect } from "react";
 import { PageTitle } from "@/components/page-title";
 import { useAuth, useCurrentFamilyId } from "@/components/auth-provider";
-import { dashboardSummaryQuery } from "@/lib/queries";
-import { useQuery } from "@tanstack/react-query";
-import { format, formatDistanceToNow, isPast, isToday } from "date-fns";
-import { Badge } from "@/components/ui/badge";
+import { dashboardSummaryQuery, queryKeys, createShoppingListMutation } from "@/lib/queries";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { PageHeader, PageHeaderHeading, PageHeaderActions } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { ShoppingListCard } from "@/components/shopping-list-card";
+import { api, type RecipeResponse } from "@/lib/api";
+import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RecipeCard } from "@/components/recipe-card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 export function HomePage() {
 	const { user } = useAuth();
 	const familyId = useCurrentFamilyId();
+	const queryClient = useQueryClient();
 	const { timers, removeTimer, startTimer, pauseTimer, resetTimer } = useTimerStore();
 	const [activeTimers, setActiveTimers] = useState<string[]>([]);
 	const [, setTick] = useState(0);
+
+	// Persisted selection for recipe tabs
+	const [recipeTab, setRecipeTab] = useState(() => localStorage.getItem("clairos_dashboard_recipe_tab") || "recent");
+
+	// Shopping list creation state
+	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+	const [newListName, setNewListName] = useState("");
 
 	const { data: summary, isLoading } = useQuery({
 		...dashboardSummaryQuery(familyId || ""),
 		enabled: !!familyId,
 	});
+
+	const toggleFavoriteMutation = useMutation({
+		mutationFn: ({ id, favorite }: { id: string; favorite: boolean }) =>
+			api.recipes.toggleFavorite(id, favorite),
+		onSuccess: () => {
+			if (familyId) {
+				queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary(familyId) });
+			}
+		},
+		onError: () => {
+			toast.error("Failed to update favorite status");
+		}
+	});
+
+	const createListMutation = useMutation({
+		...createShoppingListMutation({
+			onSuccess: () => {
+				if (familyId) {
+					queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary(familyId) });
+				}
+				setIsCreateDialogOpen(false);
+				setNewListName("");
+				toast.success("Shopping list created");
+			},
+			onError: () => toast.error("Failed to create shopping list"),
+		}),
+	});
+
+	const handleCreateList = () => {
+		if (!familyId || !newListName.trim()) return;
+		createListMutation.mutate({ familyId, name: newListName.trim(), pinned: true });
+	};
 
 	useEffect(() => {
 		const interval = setInterval(() => {
@@ -39,6 +85,11 @@ export function HomePage() {
 		return () => clearInterval(interval);
 	}, [timers]);
 
+	const handleRecipeTabChange = (value: string) => {
+		setRecipeTab(value);
+		localStorage.setItem("clairos_dashboard_recipe_tab", value);
+	};
+
 	const getTimeOfDay = () => {
 		const hour = new Date().getHours();
 		if (hour < 12) return "morning";
@@ -47,17 +98,17 @@ export function HomePage() {
 	};
 
 	return (
-		<div className="space-y-6 pb-20">
+		<div className="space-y-8 pb-20">
 			<PageTitle title="Dashboard" />
 
 			<PageHeader>
 				<PageHeaderHeading
 					title={`Good ${getTimeOfDay()}, ${user?.name?.split(' ')[0]}`}
-					description="Here's what's happening today."
+					description="Welcome home."
 				/>
 				<PageHeaderActions>
-					<Link to={ROUTES.RECIPE_NEW} className="w-full md:w-auto">
-						<Button className="w-full">
+					<Link to={ROUTES.RECIPE_NEW}>
+						<Button size="sm" variant="outline">
 							<CookingPot className="w-4 h-4 mr-2" />
 							New Recipe
 						</Button>
@@ -67,286 +118,326 @@ export function HomePage() {
 
 			{/* Active Timers */}
 			{activeTimers.length > 0 && (
-				<div className="space-y-4">
-					<h2 className="text-xl font-semibold flex items-center gap-2">
-						<Clock className="w-5 h-5 text-accent-foreground" />
-						Active Timers
-					</h2>
-					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-						{activeTimers.map(id => {
-							const timer = timers[id];
-							const remaining = getLiveRemainingMs(timer);
-							const seconds = Math.floor((remaining / 1000) % 60);
-							const minutes = Math.floor((remaining / 1000 / 60) % 60);
-							const hours = Math.floor(remaining / 1000 / 60 / 60);
+				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+					{activeTimers.map(id => {
+						const timer = timers[id];
+						const remaining = getLiveRemainingMs(timer);
+						const seconds = Math.floor((remaining / 1000) % 60);
+						const minutes = Math.floor((remaining / 1000 / 60) % 60);
+						const hours = Math.floor(remaining / 1000 / 60 / 60);
 
-							return (
-								<Card key={id} className="relative overflow-hidden group">
-									<div
-										className="absolute bottom-0 left-0 h-1 bg-accent-foreground/20 transition-all duration-1000"
-										style={{ width: `${(remaining / timer.durationMs) * 100}%` }}
-									/>
-									<CardHeader className="pb-2">
-										<div className="flex justify-between items-start">
-											<CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-												{timer.label || "Timer"}
-											</CardTitle>
-											<button
-												onClick={() => removeTimer(id)}
-												className="text-muted-foreground hover:text-destructive transition-colors"
-											>
-												<X className="w-4 h-4" />
-											</button>
+						return (
+							<Card key={id} className="relative overflow-hidden bg-primary/5 border-primary/20">
+								<div
+									className="absolute bottom-0 left-0 h-1 bg-primary transition-all duration-1000"
+									style={{ width: `${(remaining / timer.durationMs) * 100}%` }}
+								/>
+								<CardHeader className="pb-1 pt-3 px-4 flex flex-row items-center justify-between space-y-0">
+									<CardTitle className="text-xs font-semibold text-primary flex items-center gap-2">
+										<Clock className="w-3 h-3" />
+										{timer.label || "Timer"}
+									</CardTitle>
+									<button onClick={() => removeTimer(id)} className="text-muted-foreground hover:text-destructive">
+										<X className="w-3 h-3" />
+									</button>
+								</CardHeader>
+								<CardContent className="px-4 pb-3">
+									<div className="flex items-center justify-between">
+										<div className="text-xl font-mono font-bold tabular-nums">
+											{hours > 0 && `${hours}:`}{minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
 										</div>
-									</CardHeader>
-									<CardContent>
-										<div className="flex flex-col items-center gap-4">
-											<div className="text-3xl font-mono font-bold tabular-nums">
-												{hours > 0 && `${hours}:`}{minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
-											</div>
-											<div className="flex gap-2">
-												{timer.status === 'running' ? (
-													<Button
-														size="sm"
-														variant="outline"
-														onClick={() => pauseTimer(id)}
-													>
-														<Pause className="w-4 h-4" />
-													</Button>
-												) : (
-													<Button
-														size="sm"
-														variant="outline"
-														onClick={() => startTimer(id)}
-													>
-														<Play className="w-4 h-4" />
-													</Button>
-												)}
-												<Button
-													size="sm"
-													variant="outline"
-													onClick={() => resetTimer(id)}
-												>
-													<RotateCcw className="w-4 h-4" />
+										<div className="flex gap-1">
+											{timer.status === 'running' ? (
+												<Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => pauseTimer(id)}>
+													<Pause className="w-3.5 h-3.5" />
 												</Button>
-											</div>
+											) : (
+												<Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startTimer(id)}>
+													<Play className="w-3.5 h-3.5" />
+												</Button>
+											)}
+											<Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => resetTimer(id)}>
+												<RotateCcw className="w-3.5 h-3.5" />
+											</Button>
 										</div>
-									</CardContent>
-								</Card>
-							);
-						})}
-					</div>
+									</div>
+								</CardContent>
+							</Card>
+						);
+					})}
 				</div>
 			)}
 
-			{/* Summary Widgets */}
-			<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-				{/* Recent Recipes */}
-				<Card className="flex flex-col">
-					<CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-						<CardTitle className="text-base font-semibold">Latest Recipes</CardTitle>
-						<CookingPot className="w-4 h-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent className="flex-1">
-						{isLoading ? (
-							<div className="space-y-2">
-								{[1, 2, 3].map(i => <div key={i} className="h-12 bg-muted animate-pulse rounded-md" />)}
+			{/* Row 1: Pinned Lists + Activity */}
+			<div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+				{/* Pinned Shopping Lists */}
+				<div className="lg:col-span-8 space-y-4 min-w-0">
+					<div className="flex items-center justify-between px-1">
+						<h3 className="text-lg font-bold tracking-tight">Shopping Lists</h3>
+						<Link to={ROUTES.SHOPPING} className="text-xs font-medium text-muted-foreground hover:text-primary flex items-center gap-1">
+							View all <ChevronRight className="w-3 h-3" />
+						</Link>
+					</div>
+
+					{isLoading ? (
+						<div className="h-64 bg-muted/30 animate-pulse rounded-2xl border border-dashed" />
+					) : summary?.pinnedShoppingLists?.length ? (
+						<Tabs defaultValue={summary.pinnedShoppingLists[0]?.id} className="w-full">
+							<div className="flex items-center pr-2">
+								<TabsList variant="dashboard" className="flex-1">
+									{summary.pinnedShoppingLists.map(list => (
+										<TabsTrigger
+											key={list.id}
+											value={list.id}
+											variant="dashboard"
+										>
+											{list.name}
+										</TabsTrigger>
+									))}
+								</TabsList>
+								<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+									<DialogTrigger render={
+										<Button size="icon" variant="ghost" className="h-8 w-8 rounded-full mb-2">
+											<Plus className="w-4 h-4" />
+										</Button>
+									} />
+									<DialogContent>
+										<DialogHeader>
+											<DialogTitle>Create Shopping List</DialogTitle>
+											<DialogDescription>
+												Give your new shopping list a name.
+											</DialogDescription>
+										</DialogHeader>
+										<Input
+											placeholder="e.g., Weekly Groceries"
+											value={newListName}
+											onChange={(e) => setNewListName(e.target.value)}
+											onKeyDown={(e) => e.key === "Enter" && handleCreateList()}
+										/>
+										<DialogFooter>
+											<Button
+												variant="outline"
+												onClick={() => setIsCreateDialogOpen(false)}
+											>
+												Cancel
+											</Button>
+											<Button
+												onClick={handleCreateList}
+												disabled={createListMutation.isPending || !newListName.trim()}
+											>
+												{createListMutation.isPending && (
+													<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+												)}
+												Create
+											</Button>
+										</DialogFooter>
+									</DialogContent>
+								</Dialog>
 							</div>
-						) : summary?.recentRecipes?.length ? (
-							<div className="space-y-3">
-								{summary.recentRecipes.map((recipe: any) => (
-									<Link
-										key={recipe.id}
-										to={ROUTES.RECIPE_DETAIL(recipe.id)}
-										className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group"
-									>
-										<div className="w-10 h-10 rounded bg-accent/10 flex items-center justify-center shrink-0">
-											<CookingPot className="w-5 h-5 text-accent-foreground" />
-										</div>
-										<div className="min-w-0 flex-1">
-											<p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{recipe.title}</p>
-											<p className="text-xs text-muted-foreground">Added {formatDistanceToNow(new Date(recipe.createdAt))} ago</p>
-										</div>
-										<ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+							{summary.pinnedShoppingLists.map(list => (
+								<TabsContent key={list.id} value={list.id} className="mt-4 focus-visible:ring-0">
+									<ShoppingListCard list={list} />
+								</TabsContent>
+							))}
+						</Tabs>
+					) : (
+						<Card className="border-dashed bg-muted/20 rounded-2xl">
+							<CardContent className="flex flex-col items-center justify-center py-12 opacity-50">
+								<CalendarDays className="w-10 h-10 mb-2 text-muted-foreground" />
+								<p className="text-sm font-semibold">No pinned lists</p>
+								<p className="text-xs text-muted-foreground mt-1 max-w-[200px] text-center">Pin a shopping list for instant access here.</p>
+							</CardContent>
+						</Card>
+					)}
+				</div>
+
+				{/* Activity Feed Sidebar */}
+				<div className="lg:col-span-4 space-y-4">
+					<h3 className="text-lg font-bold tracking-tight px-1">Activity</h3>
+					<Card className="rounded-2xl overflow-hidden border-muted/50 bg-muted/10 shadow-sm !py-0">
+						<div className="h-[430px] overflow-y-auto scrollbar-none">
+							<div className="divide-y divide-muted/50">
+								{/* Tasks Section */}
+								<div className="relative">
+									<Link to={ROUTES.TASKS} className="sticky top-0 z-10 bg-background/95 backdrop-blur-md px-4 py-2.5 text-xs font-semibold text-muted-foreground/80 border-b border-muted/30 flex items-center justify-between hover:text-primary transition-colors cursor-pointer">
+										<span>To Do</span>
+										<ChevronRight className="w-3 h-3" />
 									</Link>
-								))}
-							</div>
-						) : (
-							<p className="text-sm text-muted-foreground py-4 text-center">No recipes yet.</p>
-						)}
-					</CardContent>
-					<div className="p-4 pt-0">
-						<Link to={ROUTES.RECIPES}>
-							<Button variant="ghost" size="sm" className="w-full text-xs">View All Recipes</Button>
-						</Link>
-					</div>
-				</Card>
+									<div className="p-2 space-y-1">
+										{isLoading ? (
+											[1, 2].map(i => <div key={i} className="h-12 w-full animate-pulse bg-muted rounded-xl" />)
+										) : summary?.outstandingTasks.length ? (
+											summary.outstandingTasks.map(task => (
+												<Link key={task.id} to={ROUTES.TASKS} className="group/item flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-primary/[0.03] transition-all border border-transparent hover:border-primary/5">
+													<div className={cn("w-1.5 h-6 rounded-full shrink-0 shadow-sm transition-all group-hover/item:scale-y-110",
+														task.priority === 'high' ? "bg-red-500 shadow-red-500/20" : task.priority === 'medium' ? "bg-amber-500 shadow-amber-500/20" : "bg-blue-500 shadow-blue-500/20"
+													)} />
+													<div className="min-w-0 flex-1">
+														<p className="text-xs font-bold truncate group-hover/item:text-primary transition-colors">{task.title}</p>
+														<p className="text-xs text-muted-foreground font-semibold mt-0.5 opacity-70">
+															{task.dueDate ? format(new Date(task.dueDate), "MMM d") : "Flexible"}
+														</p>
+													</div>
+												</Link>
+											))
+										) : (
+											<div className="py-6 flex flex-col items-center opacity-30">
+												<CheckCircle className="w-5 h-5 mb-2" />
+												<p className="text-xs font-semibold text-center mt-1">All caught up</p>
+											</div>
+										)}
+									</div>
+								</div>
 
-				{/* Upcoming Tasks */}
-				<Card className="flex flex-col">
-					<CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-						<CardTitle className="text-base font-semibold">Need to Do</CardTitle>
-						<CheckSquare className="w-4 h-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent className="flex-1">
-						{isLoading ? (
-							<div className="space-y-2">
-								{[1, 2, 3].map(i => <div key={i} className="h-12 bg-muted animate-pulse rounded-md" />)}
-							</div>
-						) : summary?.outstandingTasks?.length ? (
-							<div className="space-y-3">
-								{summary.outstandingTasks.map((task: any) => (
-									<div key={task.id} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/20">
-										<div className={cn(
-											"w-2 h-2 rounded-full shrink-0",
-											task.priority === 'high' ? "bg-destructive" : task.priority === 'medium' ? "bg-accent-foreground" : "bg-muted-foreground"
-										)} />
-										<div className="min-w-0 flex-1">
-											<p className="text-sm font-medium truncate">{task.title}</p>
-											{task.dueDate && (
-												<p className={cn(
-													"text-xs",
-													isPast(new Date(task.dueDate)) && !isToday(new Date(task.dueDate)) ? "text-destructive font-medium" : "text-muted-foreground"
-												)}>
-													Due {isToday(new Date(task.dueDate)) ? "today" : format(new Date(task.dueDate), "MMM d")}
-												</p>
-											)}
-										</div>
+								{/* Reminders Section */}
+								<div className="relative">
+									<Link to={ROUTES.REMINDERS} className="sticky top-0 z-10 bg-background/95 backdrop-blur-md px-4 py-2.5 text-xs font-semibold text-muted-foreground/80 border-b border-muted/30 flex items-center justify-between hover:text-primary transition-colors cursor-pointer">
+										<span>Reminders</span>
+										<ChevronRight className="w-3 h-3" />
+									</Link>
+									<div className="p-2 space-y-1">
+										{isLoading ? (
+											[1, 2].map(i => <div key={i} className="h-12 w-full animate-pulse bg-muted rounded-xl" />)
+										) : summary?.upcomingReminders.length ? (
+											summary.upcomingReminders.map(reminder => (
+												<div key={reminder.id} className="flex items-center gap-4 px-3 py-3 rounded-xl hover:bg-primary/[0.03] transition-all border border-transparent hover:border-primary/5">
+													<div className="w-9 h-9 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+														<Bell className="w-4 h-4 text-primary" />
+													</div>
+													<div className="min-w-0 flex-1">
+														<p className="text-xs font-bold truncate">{reminder.title}</p>
+														<p className="text-xs text-muted-foreground font-semibold mt-0.5 opacity-70">
+															{format(new Date(reminder.remindAt), "h:mm a, MMM d")}
+														</p>
+													</div>
+												</div>
+											))
+										) : (
+											<div className="py-6 flex flex-col items-center opacity-30">
+												<Bell className="w-5 h-5 mb-2" />
+												<p className="text-xs font-semibold text-center mt-1">Quiet day</p>
+											</div>
+										)}
 									</div>
-								))}
-							</div>
-						) : (
-							<p className="text-sm text-muted-foreground py-4 text-center">Clean slate! No tasks due.</p>
-						)}
-					</CardContent>
-					<div className="p-4 pt-0">
-						<Link to={ROUTES.TASKS}>
-							<Button variant="ghost" size="sm" className="w-full text-xs">Manage Tasks</Button>
-						</Link>
-					</div>
-				</Card>
+								</div>
 
-				{/* Shopping Lists */}
-				<Card className="flex flex-col">
-					<CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-						<CardTitle className="text-base font-semibold">Shopping</CardTitle>
-						<ShoppingCart className="w-4 h-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent className="flex-1">
-						{isLoading ? (
-							<div className="space-y-4">
-								{[1, 2].map(i => (
-									<div key={i} className="space-y-2">
-										<div className="h-4 w-24 bg-muted animate-pulse rounded" />
-										<div className="h-8 bg-muted animate-pulse rounded" />
+								{/* Bills Section */}
+								<div className="relative">
+									<Link to={ROUTES.BILLS} className="sticky top-0 z-10 bg-background/95 backdrop-blur-md px-4 py-2.5 text-xs font-semibold text-muted-foreground/80 border-b border-muted/30 flex items-center justify-between hover:text-primary transition-colors cursor-pointer">
+										<span>Bills</span>
+										<ChevronRight className="w-3 h-3" />
+									</Link>
+									<div className="p-2 space-y-1">
+										{isLoading ? (
+											[1, 2].map(i => <div key={i} className="h-12 w-full animate-pulse bg-muted rounded-xl" />)
+										) : summary?.upcomingBills.length ? (
+											summary.upcomingBills.map(bill => (
+												<Link key={bill.id} to={ROUTES.BILLS} className="group/item flex items-center justify-between gap-4 px-3 py-3 rounded-xl hover:bg-primary/[0.03] transition-all border border-transparent hover:border-primary/5">
+													<div className="min-w-0 flex-1">
+														<p className="text-xs font-bold truncate group-hover/item:text-primary transition-colors">{bill.name}</p>
+														<p className="text-xs text-muted-foreground font-semibold mt-0.5 opacity-70">
+															Due {format(new Date(bill.dueDate), "MMM d")}
+														</p>
+													</div>
+													<div className="text-right">
+														<p className="text-sm font-bold text-foreground">${bill.amount.toFixed(0)}</p>
+													</div>
+												</Link>
+											))
+										) : (
+											<div className="py-6 flex flex-col items-center opacity-30">
+												<Receipt className="w-5 h-5 mb-2" />
+												<p className="text-xs font-semibold text-center mt-1">Paid up</p>
+											</div>
+										)}
 									</div>
-								))}
+								</div>
 							</div>
-						) : summary?.activeShoppingLists?.length ? (
-							<div className="space-y-4">
-								{summary.activeShoppingLists.map((list: any) => (
-									<div key={list.id} className="space-y-2">
-										<div className="flex justify-between items-center">
-											<p className="text-xs font-semibold text-muted-foreground uppercase">{list.name}</p>
-											<span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded text-secondary-foreground font-medium">
-												{list.items.filter((i: any) => i.checked).length}/{list.items.length}
-											</span>
-										</div>
-										<div className="flex flex-wrap gap-1.5">
-											{list.items.filter((i: any) => !i.checked).slice(0, 5).map((item: any, i: number) => (
-												<Badge key={i} variant="outline" className="text-[10px] font-normal py-0">
-													{item.name}
-												</Badge>
-											))}
-											{list.items.filter((i: any) => !i.checked).length > 5 && (
-												<span className="text-[10px] text-muted-foreground flex items-center">+{list.items.filter((i: any) => !i.checked).length - 5} more</span>
-											)}
-										</div>
-									</div>
-								))}
-							</div>
-						) : (
-							<p className="text-sm text-muted-foreground py-4 text-center">Nothing to buy.</p>
-						)}
-					</CardContent>
-					<div className="p-4 pt-0">
-						<Link to={ROUTES.SHOPPING}>
-							<Button variant="ghost" size="sm" className="w-full text-xs">View Lists</Button>
-						</Link>
-					</div>
-				</Card>
+						</div>
+					</Card>
+				</div>
+			</div>
 
-				{/* Upcoming Bills */}
-				<Card className="flex flex-col">
-					<CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-						<CardTitle className="text-base font-semibold">Bills</CardTitle>
-						<Receipt className="w-4 h-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent className="flex-1">
-						{isLoading ? (
-							<div className="space-y-2">
-								{[1, 2].map(i => <div key={i} className="h-12 bg-muted animate-pulse rounded-md" />)}
-							</div>
-						) : summary?.upcomingBills?.length ? (
-							<div className="space-y-3">
-								{summary.upcomingBills.map((bill: any) => (
-									<div key={bill.id} className="flex items-center justify-between p-2 rounded-lg border bg-card">
-										<div className="min-w-0">
-											<p className="text-sm font-medium truncate">{bill.name}</p>
-											<p className="text-xs text-muted-foreground">Due {format(new Date(bill.dueDate), "MMM d")}</p>
-										</div>
-										<div className="text-right">
-											<p className="text-sm font-bold text-foreground">${bill.amount.toFixed(2)}</p>
-											<p className="text-[10px] text-muted-foreground uppercase">{bill.frequency}</p>
-										</div>
-									</div>
-								))}
-							</div>
-						) : (
-							<p className="text-sm text-muted-foreground py-4 text-center">No upcoming bills.</p>
-						)}
-					</CardContent>
-					<div className="p-4 pt-0">
-						<Link to={ROUTES.BILLS}>
-							<Button variant="ghost" size="sm" className="w-full text-xs">Manage Expenses</Button>
-						</Link>
-					</div>
-				</Card>
+			{/* Row 2: Recipes Tabs */}
+			<div className="space-y-6 pt-4">
+				<div className="flex items-center justify-between px-1">
+					<h3 className="text-lg font-bold tracking-tight">Recipes</h3>
+					<Link to={ROUTES.RECIPES} className="text-xs font-medium text-muted-foreground hover:text-primary flex items-center gap-1">
+						Browse all <ChevronRight className="w-3 h-3" />
+					</Link>
+				</div>
 
-				{/* Important Reminders */}
-				<Card className="flex flex-col">
-					<CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-						<CardTitle className="text-base font-semibold">Reminders</CardTitle>
-						<Bell className="w-4 h-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent className="flex-1">
-						{isLoading ? (
-							<div className="space-y-2">
-								{[1, 2, 3].map(i => <div key={i} className="h-12 bg-muted animate-pulse rounded-md" />)}
-							</div>
-						) : summary?.upcomingReminders?.length ? (
-							<div className="space-y-3">
-								{summary.upcomingReminders.map((reminder: any) => (
-									<div key={reminder.id} className="flex items-start gap-2 p-2 rounded-lg bg-accent/10">
-										<Bell className="w-3.5 h-3.5 mt-0.5 text-accent-foreground shrink-0" />
-										<div className="min-w-0 flex-1">
-											<p className="text-sm font-medium truncate">{reminder.title}</p>
-											<p className="text-xs text-muted-foreground">{format(new Date(reminder.remindAt), "h:mm a")}</p>
-										</div>
-									</div>
-								))}
-							</div>
-						) : (
-							<p className="text-sm text-muted-foreground py-4 text-center">No active reminders.</p>
-						)}
-					</CardContent>
-					<div className="p-4 pt-0">
-						<Link to={ROUTES.REMINDERS}>
-							<Button variant="ghost" size="sm" className="w-full text-xs">See All Reminders</Button>
-						</Link>
+				<Tabs value={recipeTab} onValueChange={handleRecipeTabChange} className="w-full">
+					<TabsList variant="dashboard">
+						<TabsTrigger
+							value="recent"
+							variant="dashboard"
+						>
+							Recent
+						</TabsTrigger>
+						<TabsTrigger
+							value="favorites"
+							variant="dashboard"
+						>
+							Favorites
+						</TabsTrigger>
+						<TabsTrigger
+							value="signatures"
+							variant="dashboard"
+						>
+							Signatures
+						</TabsTrigger>
+					</TabsList>
+
+					<div className="mt-8">
+						<TabsContent value="recent" className="m-0 focus-visible:ring-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
+							<RecipeList recipes={summary?.recentRecipes} isLoading={isLoading} toggleFavorite={(id, fav) => toggleFavoriteMutation.mutate({ id, favorite: fav })} />
+						</TabsContent>
+						<TabsContent value="favorites" className="m-0 focus-visible:ring-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
+							<RecipeList recipes={summary?.favoriteRecipes} isLoading={isLoading} toggleFavorite={(id, fav) => toggleFavoriteMutation.mutate({ id, favorite: fav })} />
+						</TabsContent>
+						<TabsContent value="signatures" className="m-0 focus-visible:ring-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
+							<RecipeList recipes={summary?.signatureRecipes} isLoading={isLoading} toggleFavorite={(id, fav) => toggleFavoriteMutation.mutate({ id, favorite: fav })} />
+						</TabsContent>
 					</div>
-				</Card>
+				</Tabs>
 			</div>
 		</div>
+	);
+}
+
+function RecipeList({ recipes, isLoading, toggleFavorite }: { recipes?: RecipeResponse[], isLoading: boolean, toggleFavorite: (id: string, fav: boolean) => void }) {
+	if (isLoading) {
+		return (
+			<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+				{[1, 2, 3, 4].map(i => <div key={i} className="h-72 bg-muted/30 animate-pulse rounded-2xl" />)}
+			</div>
+		);
+	}
+
+	if (!recipes?.length) {
+		return (
+			<div className="flex flex-col items-center justify-center py-24 bg-muted/10 rounded-3xl border border-dashed border-muted-foreground/20 text-muted-foreground/40">
+				<div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mb-4">
+					<Award className="w-8 h-8 opacity-20" />
+				</div>
+				<p className="text-sm font-semibold text-center">No recipes to show</p>
+				<p className="text-xs text-center mt-1 opacity-70">Start by adding your first family recipe.</p>
+			</div>
+		);
+	}
+
+	return (
+		<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" >
+			{
+				recipes.map(recipe => (
+					<RecipeCard
+						key={recipe.id}
+						recipe={recipe}
+						onFavoriteToggle={toggleFavorite}
+					/>
+				))
+			}
+		</div >
 	);
 }

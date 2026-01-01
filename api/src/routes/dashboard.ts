@@ -1,10 +1,13 @@
 import { Hono } from 'hono';
 import { db } from '../db/index.ts';
-import { recipes, reminders, tasks, shoppingLists, bills } from '../db/schema.ts';
-import { desc, eq, and, isNull, gte, or } from 'drizzle-orm';
+import { recipes, reminders, tasks, shoppingLists, bills, userFavoriteRecipes } from '../db/schema.ts';
+import { desc, eq, and, isNull, gte, or, inArray, getTableColumns, sql } from 'drizzle-orm';
 import type { Variables } from '../index.ts';
+import { requireAuth } from '../auth/index.ts';
 
 export const dashboardRouter = new Hono<{ Variables: Variables }>();
+
+dashboardRouter.use('*', requireAuth);
 
 dashboardRouter.get('/', async (c) => {
 	const user = c.get('user');
@@ -21,7 +24,9 @@ dashboardRouter.get('/', async (c) => {
 		outstandingTasks,
 		activeShoppingLists,
 		pinnedShoppingLists,
-		upcomingBills
+		upcomingBills,
+		signatureRecipes,
+		favoriteRecipes
 	] = await Promise.all([
 		// 1. Recent Recipes
 		db.query.recipes.findMany({
@@ -96,7 +101,31 @@ dashboardRouter.get('/', async (c) => {
 			),
 			orderBy: [desc(bills.dueDate)],
 			limit: 5,
+		}),
+
+		// 7. Signature Dishes
+		db.query.recipes.findMany({
+			where: and(
+				eq(recipes.familyId, familyId),
+				eq(recipes.isSignature, true)
+			),
+			orderBy: [desc(recipes.updatedAt)],
+			limit: 5,
+		}),
+
+		// 8. User Favorites
+		db.select({
+			...getTableColumns(recipes),
+			favorite: sql<boolean>`true`.as('favorite')
 		})
+			.from(recipes)
+			.innerJoin(userFavoriteRecipes, eq(recipes.id, userFavoriteRecipes.recipeId))
+			.where(and(
+				eq(userFavoriteRecipes.userId, user.id),
+				eq(recipes.familyId, familyId)
+			))
+			.orderBy(desc(userFavoriteRecipes.createdAt))
+			.limit(5)
 	]);
 
 	// Re-sort reminders to be truly "next up" (closest future dates first, then overdue)
@@ -106,11 +135,13 @@ dashboardRouter.get('/', async (c) => {
 	upcomingBills.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
 	return c.json({
-		recentRecipes,
+		recentRecipes: recentRecipes.map(r => ({ ...r, favorite: false })), // Not strictly necessary but consistent
 		upcomingReminders,
 		outstandingTasks,
 		activeShoppingLists,
 		pinnedShoppingLists,
-		upcomingBills
+		upcomingBills,
+		signatureRecipes: signatureRecipes.map(r => ({ ...r, favorite: false })),
+		favoriteRecipes: favoriteRecipes.map(r => ({ ...r, favorite: true }))
 	});
 });

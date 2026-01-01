@@ -66,6 +66,8 @@ export interface DashboardSummaryResponse {
 	activeShoppingLists: ShoppingListResponse[];
 	pinnedShoppingLists: ShoppingListResponse[];
 	upcomingBills: BillResponse[];
+	signatureRecipes: RecipeResponse[];
+	favoriteRecipes: RecipeResponse[];
 }
 
 export interface UserResponse {
@@ -96,6 +98,8 @@ export interface RecipeResponse {
 	instructions: string;
 	imageUrl?: string;
 	tags: string[];
+	isSignature: boolean;
+	favorite?: boolean; // User-specific favorite status (computed)
 	createdAt: string;
 	updatedAt: string;
 	ingredientGroups: IngredientGroupResponse[];
@@ -148,6 +152,7 @@ export interface RecipeCreateInput {
 	cookTimeMinutes?: number;
 	instructions?: string;
 	imageUrl?: string;
+	isSignature?: boolean;
 	tags?: string[];
 	ingredientGroups?: IngredientGroupInput[];
 	ingredients?: RecipeIngredientInput[];
@@ -162,6 +167,7 @@ export interface RecipeUpdateInput {
 	cookTimeMinutes?: number;
 	instructions?: string;
 	imageUrl?: string;
+	isSignature?: boolean;
 	tags?: string[];
 	ingredientGroups?: IngredientGroupInput[];
 	ingredients?: RecipeIngredientInput[];
@@ -424,6 +430,11 @@ export const api = {
 				method: 'PATCH',
 				body: JSON.stringify(data),
 			}),
+		toggleFavorite: (id: string, favorite: boolean) =>
+			apiFetch<{ success: boolean }>(`/recipes/${id}/favorite`, {
+				method: 'POST',
+				body: JSON.stringify({ favorite }),
+			}),
 		delete: (id: string) =>
 			apiFetch<{ success: boolean }>(`/recipes/${id}`, { method: 'DELETE' }),
 	},
@@ -434,7 +445,7 @@ export const api = {
 			list: (familyId: string) =>
 				apiFetch<ShoppingListResponse[]>('/shopping/lists', { params: { familyId } }),
 			get: (id: string) => apiFetch<ShoppingListResponse>(`/shopping/lists/${id}`),
-			create: (data: { familyId: string; name: string }) =>
+			create: (data: { familyId: string; name: string; pinned?: boolean }) =>
 				apiFetch<ShoppingListResponse>('/shopping/lists', {
 					method: 'POST',
 					body: JSON.stringify(data),

@@ -46,6 +46,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 			instructions: "",
 			tags: [],
 			imageUrl: "",
+			isSignature: false,
 			ingredientGroups: [],
 			ingredients: [],
 		},
@@ -84,6 +85,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 				instructions: recipe.instructions,
 				tags: recipe.tags as string[],
 				imageUrl: recipe.imageUrl || "",
+				isSignature: recipe.isSignature,
 				ingredientGroups: recipe.ingredientGroups?.map((group) => ({
 					id: group.id,
 					name: group.name,
@@ -120,6 +122,7 @@ export function RecipeEditPage({ isNew = false }: { isNew?: boolean }) {
 				instructions: instructionsString,
 				tags: data.tags,
 				imageUrl: data.imageUrl || undefined,
+				isSignature: data.isSignature,
 				ingredientGroups: data.ingredientGroups.map((group, index) => ({
 					id: group.id,
 					name: group.name,

@@ -115,6 +115,7 @@ export const recipes = pgTable('recipes', {
 	cookTimeMinutes: integer('cook_time_minutes'),
 	instructions: text('instructions').notNull().default(''),
 	imageUrl: text('image_url'),
+	isSignature: boolean('is_signature').notNull().default(false),
 	tags: jsonb('tags').notNull().default([]),
 	createdById: text('created_by_id').references(() => users.id),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -146,6 +147,15 @@ export const recipeIngredients = pgTable('recipe_ingredients', {
 }, (table) => [
 	index('recipe_ingredients_recipe_id_idx').on(table.recipeId),
 	index('recipe_ingredients_group_id_idx').on(table.groupId),
+]);
+
+export const userFavoriteRecipes = pgTable('user_favorite_recipes', {
+	userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	recipeId: uuid('recipe_id').notNull().references(() => recipes.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => [
+	primaryKey({ columns: [table.userId, table.recipeId] }),
+	index('user_favorite_recipes_user_id_idx').on(table.userId),
 ]);
 
 // ─────────────────────────────────────────────────────────────
@@ -362,6 +372,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 	accounts: many(accounts),
 	familyMemberships: many(familyMembers),
 	pushSubscriptions: many(pushSubscriptions),
+	favoriteRecipes: many(userFavoriteRecipes),
 }));
 
 export const familiesRelations = relations(families, ({ many }) => ({
@@ -410,6 +421,7 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
 	ingredientGroups: many(ingredientGroups),
 	ingredients: many(recipeIngredients),
 	meals: many(meals),
+	favoritedBy: many(userFavoriteRecipes),
 }));
 
 export const ingredientGroupsRelations = relations(ingredientGroups, ({ one, many }) => ({
@@ -530,5 +542,16 @@ export const billsRelations = relations(bills, ({ one }) => ({
 	reminder: one(reminders, {
 		fields: [bills.reminderId],
 		references: [reminders.id],
+	}),
+}));
+
+export const userFavoriteRecipesRelations = relations(userFavoriteRecipes, ({ one }) => ({
+	user: one(users, {
+		fields: [userFavoriteRecipes.userId],
+		references: [users.id],
+	}),
+	recipe: one(recipes, {
+		fields: [userFavoriteRecipes.recipeId],
+		references: [recipes.id],
 	}),
 }));

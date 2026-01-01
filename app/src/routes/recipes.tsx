@@ -16,8 +16,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
 	Plus,
-	Clock,
-	Users,
 	Loader2,
 	Search,
 	Filter,
@@ -42,11 +40,10 @@ import { recipesQuery, queryKeys } from "@/lib/queries";
 import { RecipeImportDialog } from "@/components/recipe-import-dialog";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { PageTitle } from "@/components/page-title";
-import { LazyImage } from "@/components/ui/lazy-image";
 import { PageHeader, PageHeaderHeading, PageHeaderActions } from "@/components/page-header";
 import { useDebounce } from "@/hooks/use-debounce";
+import { RecipeCard } from "@/components/recipe-card";
 
 export function RecipesPage() {
 	const navigate = useNavigate();
@@ -646,83 +643,19 @@ export function RecipesPage() {
 			{filteredRecipes.length > 0 && (
 				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{filteredRecipes.map((recipe) => (
-						<Card
+						<RecipeCard
 							key={recipe.id}
-							className={cn(
-								"hover:shadow-md transition-shadow cursor-pointer group relative overflow-hidden",
-								{
-									"pt-0": recipe.imageUrl != null,
-									"ring-2 ring-primary border-primary":
-										selectionMode && selectedIds.has(recipe.id)
-								}
-							)}
-							onClick={() => {
+							recipe={recipe}
+							selectionMode={selectionMode}
+							isSelected={selectedIds.has(recipe.id)}
+							onClick={(recipe) => {
 								if (selectionMode) {
 									toggleSelection(recipe.id);
 								} else {
 									navigate(`/recipes/${recipe.id}`, { viewTransition: true });
 								}
 							}}
-						>
-							{selectionMode && (
-								<div className="absolute top-2 left-2 z-10">
-									{selectedIds.has(recipe.id) ? (
-										<CheckCircle2 className="w-6 h-6 text-primary fill-background" />
-									) : (
-										<div className="w-6 h-6 rounded-full border-2 border-primary/20 bg-background" />
-									)}
-								</div>
-							)}
-
-							{recipe.imageUrl && (
-								<LazyImage
-									src={recipe.imageUrl}
-									alt={recipe.title}
-									containerClassName="aspect-video w-full rounded-t-lg"
-									imageClassName="group-hover:scale-105 transition-transform"
-								/>
-							)}
-							<CardHeader className="pb-2">
-								<CardTitle className="text-lg">{recipe.title}</CardTitle>
-							</CardHeader>
-							<CardContent>
-								{recipe.description && (
-									<p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-										{recipe.description}
-									</p>
-								)}
-								<div className="flex items-center gap-4 text-xs text-muted-foreground">
-									{(recipe.prepTimeMinutes || recipe.cookTimeMinutes) ? (
-										<div className="flex items-center gap-1">
-											<Clock className="w-3 h-3" />
-											{(recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0)} min
-										</div>
-									) : null}
-									<div className="flex items-center gap-1">
-										<Users className="w-3 h-3" />
-										{recipe.servings} servings
-										{recipe.yield && <span className="opacity-70 ml-0.5">({recipe.yield})</span>}
-									</div>
-								</div>
-								{(recipe.tags as string[]).length > 0 && (
-									<div className="flex flex-wrap gap-1 mt-3">
-										{(recipe.tags as string[]).slice(0, 3).map((tag) => (
-											<span
-												key={tag}
-												className="px-2 py-0.5 text-xs rounded-full bg-secondary text-secondary-foreground"
-											>
-												{tag}
-											</span>
-										))}
-										{(recipe.tags as string[]).length > 3 && (
-											<span className="text-xs text-muted-foreground">
-												+{(recipe.tags as string[]).length - 3}
-											</span>
-										)}
-									</div>
-								)}
-							</CardContent>
-						</Card>
+						/>
 					))}
 				</div>
 			)}

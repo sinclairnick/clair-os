@@ -239,15 +239,15 @@ export function createRecipeMutation(options?: CreateRecipeMutationOptions) {
 }
 
 type CreateShoppingListMutationOptions = Omit<
-	UseMutationOptions<ShoppingListResponse, ApiError, { familyId: string; name: string }>,
+	UseMutationOptions<ShoppingListResponse, ApiError, { familyId: string; name: string; pinned?: boolean }>,
 	'mutationFn'
 >;
 
 export function createShoppingListMutation(options?: CreateShoppingListMutationOptions) {
 	return {
-		mutationFn: (data: { familyId: string; name: string }) => api.shopping.lists.create(data),
+		mutationFn: (data: { familyId: string; name: string; pinned?: boolean }) => api.shopping.lists.create(data),
 		...options,
-	} satisfies UseMutationOptions<ShoppingListResponse, ApiError, { familyId: string; name: string }>;
+	} satisfies UseMutationOptions<ShoppingListResponse, ApiError, { familyId: string; name: string; pinned?: boolean }>;
 }
 
 type ToggleShoppingItemMutationOptions = Omit<

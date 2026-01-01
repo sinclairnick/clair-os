@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { db } from '../db/index.ts';
-import { recipes, recipeIngredients, ingredientGroups } from '../db/schema.ts';
+import { recipes, recipeIngredients, ingredientGroups, userFavoriteRecipes } from '../db/schema.ts';
 import { eq, and, or, gte, lte, ilike, sql, asc, desc, count, getTableColumns } from 'drizzle-orm';
 import {
 	requireAuth,
@@ -148,6 +148,7 @@ const createRecipeSchema = z.object({
 	cookTimeMinutes: z.number().int().min(0).optional(),
 	instructions: z.string().default(''),
 	imageUrl: z.string().url().optional(),
+	isSignature: z.boolean().default(false),
 	tags: z.array(z.string()).default([]),
 	ingredientGroups: z.array(ingredientGroupSchema).default([]),
 	ingredients: z.array(ingredientSchema).default([]),
@@ -260,6 +261,7 @@ const updateRecipeSchema = z.object({
 	cookTimeMinutes: z.number().int().min(0).optional(),
 	instructions: z.string().optional(),
 	imageUrl: z.string().url().optional(),
+	isSignature: z.boolean().optional(),
 	tags: z.array(z.string()).optional(),
 	ingredientGroups: z.array(ingredientGroupSchema).optional(),
 	ingredients: z.array(ingredientSchema).optional(),
@@ -411,3 +413,27 @@ recipesRouter.delete('/:id',
 		return c.json({ success: true });
 	}
 );
+
+// Toggle user favorite
+recipesRouter.post('/:id/favorite', async (c) => {
+	const user = c.get('user');
+	const recipeId = c.req.param('id');
+	const { favorite } = await c.req.json<{ favorite: boolean }>();
+
+	if (favorite) {
+		await db.insert(userFavoriteRecipes)
+			.values({
+				userId: user.id,
+				recipeId,
+			})
+			.onConflictDoNothing();
+	} else {
+		await db.delete(userFavoriteRecipes)
+			.where(and(
+				eq(userFavoriteRecipes.userId, user.id),
+				eq(userFavoriteRecipes.recipeId, recipeId)
+			));
+	}
+
+	return c.json({ success: true });
+});

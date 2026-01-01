@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { inferCategory, GROCERY_CATEGORIES } from "@clairos/shared";
 import { cn } from "@/lib/utils";
 import { ItemRow } from "@/routes/shopping-item-row";
-import { ShoppingListResponse } from "@/lib/api";
+import type { ShoppingListResponse } from "@/lib/api";
 import { useCurrentFamilyId } from "@/components/auth-provider";
 
 interface ShoppingListCardProps {
