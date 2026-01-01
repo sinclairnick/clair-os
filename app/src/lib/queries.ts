@@ -287,15 +287,15 @@ export function completeTaskMutation(options?: CompleteTaskMutationOptions) {
 }
 
 type UpdateShoppingListMutationOptions = Omit<
-	UseMutationOptions<ShoppingListResponse, ApiError, { id: string; name: string }>,
+	UseMutationOptions<ShoppingListResponse, ApiError, { id: string; name?: string; notes?: string | null }>,
 	'mutationFn'
 >;
 
 export function updateShoppingListMutation(options?: UpdateShoppingListMutationOptions) {
 	return {
-		mutationFn: ({ id, name }: { id: string; name: string }) => api.shopping.lists.update(id, { name }),
+		mutationFn: ({ id, name, notes }: { id: string; name?: string; notes?: string | null }) => api.shopping.lists.update(id, { name, notes }),
 		...options,
-	} satisfies UseMutationOptions<ShoppingListResponse, ApiError, { id: string; name: string }>;
+	} satisfies UseMutationOptions<ShoppingListResponse, ApiError, { id: string; name?: string; notes?: string | null }>;
 }
 
 type DeleteShoppingListMutationOptions = Omit<

@@ -173,6 +173,7 @@ export interface ShoppingListResponse {
 	status: 'active' | 'completed' | 'archived';
 	createdAt: string;
 	completedAt?: string;
+	notes?: string | null;
 	items: ShoppingItemResponse[];
 }
 
@@ -436,7 +437,7 @@ export const api = {
 					method: 'POST',
 					body: JSON.stringify(data),
 				}),
-			update: (id: string, data: { name: string }) =>
+			update: (id: string, data: { name?: string; notes?: string | null }) =>
 				apiFetch<ShoppingListResponse>(`/shopping/lists/${id}`, {
 					method: 'PATCH',
 					body: JSON.stringify(data),

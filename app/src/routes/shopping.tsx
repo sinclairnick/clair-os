@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -19,7 +18,12 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Loader2, ShoppingBag, CheckCircle, Trash2, MoreVertical, Pencil } from "lucide-react";
+import {
+	Tabs,
+	TabsList,
+	TabsTrigger,
+} from "@/components/ui/tabs";
+import { Plus, Loader2, ShoppingBag, CheckCircle, Trash2, MoreVertical, Pencil, FileText, LayoutGrid, List as ListIcon } from "lucide-react";
 import { useCurrentFamilyId } from "@/components/auth-provider";
 import {
 	shoppingListsQuery,
@@ -31,10 +35,12 @@ import {
 	updateShoppingItemNameMutation,
 } from "@/lib/queries";
 import { api } from "@/lib/api";
-import { RecipeHoverPreview } from "@/components/recipe-hover-preview";
 import { toast } from "sonner";
 import { PageTitle } from "@/components/page-title";
 import { PageHeader, PageHeaderHeading, PageHeaderActions } from "@/components/page-header";
+import { Textarea } from "@/components/ui/textarea";
+import { inferCategory, GROCERY_CATEGORIES } from "@clairos/shared";
+import { ItemRow } from "./shopping-item-row";
 
 export function ShoppingPage() {
 	const familyId = useCurrentFamilyId();
@@ -48,6 +54,9 @@ export function ShoppingPage() {
 	const [editingListName, setEditingListName] = useState("");
 	const [editingItemId, setEditingItemId] = useState<string | null>(null);
 	const [editingItemName, setEditingItemName] = useState("");
+	const [editingNotesListId, setEditingNotesListId] = useState<string | null>(null);
+	const [editingNotesValue, setEditingNotesValue] = useState("");
+	const [listViewModes, setListViewModes] = useState<Record<string, "inline" | "sectioned">>({});
 
 	const { data: lists, isLoading, error } = useQuery(
 		shoppingListsQuery(familyId || "", {
@@ -187,6 +196,18 @@ export function ShoppingPage() {
 		}
 	};
 
+	const startEditingNotes = (list: { id: string; notes?: string | null }) => {
+		setEditingNotesListId(list.id);
+		setEditingNotesValue(list.notes || "");
+	};
+
+	const saveListNotes = () => {
+		if (editingNotesListId) {
+			updateListMutation.mutate({ id: editingNotesListId, notes: editingNotesValue.trim() || null });
+			setEditingNotesListId(null);
+		}
+	};
+
 	if (!familyId) {
 		return (
 			<div className="flex items-center justify-center h-64">
@@ -322,7 +343,21 @@ export function ShoppingPage() {
 										)}
 
 										<div className="flex items-center gap-2">
-											<span className="text-sm font-normal text-muted-foreground">
+											<Tabs
+												value={listViewModes[list.id] || "inline"}
+												onValueChange={(val) => setListViewModes(prev => ({ ...prev, [list.id]: val as "inline" | "sectioned" }))}
+												className="mr-1"
+											>
+												<TabsList className="h-7 p-0.5 bg-muted/50 border-none">
+													<TabsTrigger value="inline" className="px-2 h-6 text-[10px] data-[state=active]:bg-background data-[state=active]:shadow-sm">
+														<ListIcon className="w-3 h-3" />
+													</TabsTrigger>
+													<TabsTrigger value="sectioned" className="px-2 h-6 text-[10px] data-[state=active]:bg-background data-[state=active]:shadow-sm">
+														<LayoutGrid className="w-3 h-3" />
+													</TabsTrigger>
+												</TabsList>
+											</Tabs>
+											<span className="text-sm font-normal text-muted-foreground mr-1">
 												{list.items.filter((i) => i.checked).length}/
 												{list.items.length}
 											</span>
@@ -384,70 +419,135 @@ export function ShoppingPage() {
 									</div>
 
 									{/* Items list */}
-									<div className="space-y-1">
-										{list.items.map((item) => (
-											<div
-												key={item.id}
-												className="flex items-center gap-3 py-1 group"
-											>
-												<Checkbox
-													checked={item.checked}
-													disabled={toggleMutation.isPending}
-													onCheckedChange={() => toggleMutation.mutate(item.id)}
-												/>
+									<div className="space-y-4">
+										{listViewModes[list.id] === "sectioned" ? (
+											(() => {
+												const grouped = list.items.reduce((acc, item) => {
+													const category = inferCategory(item.name);
+													if (!acc[category]) acc[category] = [];
+													acc[category].push(item);
+													return acc;
+												}, {} as Record<string, typeof list.items>);
 
-												{editingItemId === item.id ? (
-													<div className="flex items-center gap-1 flex-1">
-														<Input
-															value={editingItemName}
-															onChange={(e) => setEditingItemName(e.target.value)}
-															onBlur={saveItemName}
-															onKeyDown={(e) => {
-																if (e.key === "Enter") saveItemName();
-																if (e.key === "Escape") setEditingItemId(null);
-															}}
-															autoFocus
-															className="h-7 text-sm"
-														/>
+												// Sort categories by predefined order
+												const categories = Object.keys(grouped).sort((a, b) => {
+													const idxA = GROCERY_CATEGORIES.indexOf(a);
+													const idxB = GROCERY_CATEGORIES.indexOf(b);
+													if (idxA === -1) return 1;
+													if (idxB === -1) return -1;
+													return idxA - idxB;
+												});
+
+												return categories.map((category) => (
+													<div key={category} className="space-y-1">
+														<div className="flex items-center gap-2 px-1 mb-1 mt-3 first:mt-0">
+															<span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+																{category}
+															</span>
+															<div className="h-px bg-muted/60 flex-1" />
+														</div>
+														{grouped[category].map((item) => (
+															<ItemRow
+																key={item.id}
+																item={item}
+																isPending={toggleMutation.isPending}
+																onToggle={() => toggleMutation.mutate(item.id)}
+																onEdit={() => startEditingItem(item)}
+																onDelete={() => deleteItemMutation.mutate(item.id)}
+																isEditing={editingItemId === item.id}
+																editingName={editingItemName}
+																setEditingName={setEditingItemName}
+																onSave={saveItemName}
+																onCancel={() => setEditingItemId(null)}
+															/>
+														))}
 													</div>
-												) : (
-													<span
-														className={`flex-1 cursor-pointer hover:bg-muted/50 rounded px-1 -ml-1 py-0.5 ${item.checked
-															? "line-through text-muted-foreground"
-															: ""
-															}`}
-														onClick={() => startEditingItem(item)}
-													>
-														{item.quantity > 1 && `${item.quantity}x `}
-														{item.name}
-														{item.unit && ` (${item.unit})`}
-													</span>
-												)}
-
-												{item.sourceRecipeId && (
-													<div className="mx-1">
-														<RecipeHoverPreview recipeId={item.sourceRecipeId} />
-													</div>
-												)}
-
-												<Button
-													size="icon"
-													variant="ghost"
-													className="opacity-0 group-hover:opacity-100 h-6 w-6"
-													onClick={() => deleteItemMutation.mutate(item.id)}
-													disabled={deleteItemMutation.isPending}
-												>
-													<Trash2 className="w-3 h-3 text-muted-foreground" />
-												</Button>
+												));
+											})()
+										) : (
+											<div className="space-y-1">
+												{list.items.map((item) => (
+													<ItemRow
+														key={item.id}
+														item={item}
+														category={inferCategory(item.name)}
+														isPending={toggleMutation.isPending}
+														onToggle={() => toggleMutation.mutate(item.id)}
+														onEdit={() => startEditingItem(item)}
+														onDelete={() => deleteItemMutation.mutate(item.id)}
+														isEditing={editingItemId === item.id}
+														editingName={editingItemName}
+														setEditingName={setEditingItemName}
+														onSave={saveItemName}
+														onCancel={() => setEditingItemId(null)}
+													/>
+												))}
 											</div>
-										))}
+										)}
 									</div>
 
-									{list.items.length === 0 && (
-										<p className="text-sm text-muted-foreground text-center py-2">
-											No items yet - add some above!
-										</p>
+									{/* List Notes */}
+									{(list.notes || editingNotesListId === list.id) && (
+										<div className="mt-4 pt-4 border-t border-dashed">
+											<div className="flex items-center justify-between mb-2">
+												<h4 className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+													<FileText className="w-3 h-3" />
+													List Notes
+												</h4>
+												{editingNotesListId !== list.id && (
+													<Button
+														size="icon"
+														variant="ghost"
+														className="h-6 w-6"
+														onClick={() => startEditingNotes(list)}
+													>
+														<Pencil className="w-3 h-3 text-muted-foreground" />
+													</Button>
+												)}
+											</div>
+											{editingNotesListId === list.id ? (
+												<div className="space-y-2">
+													<Textarea
+														value={editingNotesValue}
+														onChange={(e) => setEditingNotesValue(e.target.value)}
+														placeholder="Add some notes to this list..."
+														className="min-h-[80px] text-sm"
+														autoFocus
+													/>
+													<div className="flex justify-end gap-2">
+														<Button size="sm" variant="ghost" onClick={() => setEditingNotesListId(null)}>
+															Cancel
+														</Button>
+														<Button size="sm" onClick={saveListNotes}>
+															Save Notes
+														</Button>
+													</div>
+												</div>
+											) : (
+												<p
+													className="text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded p-1 -ml-1"
+													onClick={() => startEditingNotes(list)}
+												>
+													{list.notes}
+												</p>
+											)}
+										</div>
 									)}
+
+									{!list.notes && editingNotesListId !== list.id && (
+										<div className="mt-4">
+											<Button
+												variant="ghost"
+												size="sm"
+												className="h-auto p-1 text-xs text-muted-foreground/60 hover:text-muted-foreground italic font-normal"
+												onClick={() => startEditingNotes(list)}
+											>
+												<FileText className="w-3 h-3 mr-1.5" />
+												No notes yet. Click to add some.
+											</Button>
+										</div>
+									)}
+
 								</CardContent>
 							</Card>
 						))}

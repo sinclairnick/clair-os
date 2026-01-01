@@ -157,6 +157,7 @@ export const shoppingLists = pgTable('shopping_lists', {
 	familyId: uuid('family_id').notNull().references(() => families.id, { onDelete: 'cascade' }),
 	name: text('name').notNull(),
 	status: text('status').notNull().default('active'), // 'active' | 'completed' | 'archived'
+	notes: text('notes'),
 	createdById: text('created_by_id').references(() => users.id),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 	completedAt: timestamp('completed_at'),

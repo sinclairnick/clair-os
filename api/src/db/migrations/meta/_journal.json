@@ -50,6 +50,13 @@
       "when": 1767086767758,
       "tag": "0006_wooden_goliath",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1767235874883,
+      "tag": "0007_spicy_hiroim",
+      "breakpoints": true
     }
   ]
 }
